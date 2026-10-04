@@ -822,97 +822,80 @@ window.addEventListener('unhandledrejection', function(e){
     padLinkSend(msg);
   }
 
-  // ================= KOPPLUNG ÜBER 4-STELLIGEN CODE (Pad und Beamer auf zwei Geräten, per WebRTC/PeerJS) =================
-  const PEER_LIB_URL = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
-  const PEER_PREFIX = 'rbparty-';
-  // Verbindungshelfer: STUN findet die öffentliche Adresse, TURN leitet den Verkehr um, wenn es direkt nicht geht (Mobilfunk, CGNAT, strenge WLANs).
-  // Die TURN-Zugangsdaten unten sind der öffentliche Gratis-Testzugang von Open Relay (metered.ca). Für dauerhaft stabile Verbindung
-  // dort ein kostenloses Konto anlegen und die drei Zeilen mit username/credential durch die eigenen Daten ersetzen.
-  const TURN_USER = 'openrelayproject', TURN_PASS = 'openrelayproject';
-  const PEER_OPTS = { debug:0, config:{ iceCandidatePoolSize:4, iceServers:[
-    { urls:'stun:stun.l.google.com:19302' },
-    { urls:'stun:openrelay.metered.ca:80' },
-    { urls:'turn:openrelay.metered.ca:80', username:TURN_USER, credential:TURN_PASS },
-    { urls:'turn:openrelay.metered.ca:443', username:TURN_USER, credential:TURN_PASS },
-    { urls:'turn:openrelay.metered.ca:443?transport=tcp', username:TURN_USER, credential:TURN_PASS },
-    { urls:'turns:openrelay.metered.ca:443?transport=tcp', username:TURN_USER, credential:TURN_PASS }
-  ] } };
-  let peerLibPromise = null;
-  function loadPeerLib(){
-    if(window.Peer) return Promise.resolve();
-    if(peerLibPromise) return peerLibPromise;
-    peerLibPromise = new Promise((resolve, reject)=>{
-      const s = document.createElement('script');
-      s.src = PEER_LIB_URL;
-      s.onload = ()=>resolve();
-      s.onerror = ()=>{ peerLibPromise = null; reject(new Error('lib')); };
-      document.head.appendChild(s);
-    });
-    return peerLibPromise;
-  }
+  // ================= KOPPLUNG ÜBER 4-STELLIGEN CODE (Pad und Beamer auf zwei Geräten, über eine Firebase-Datenbank) =================
+  // Der Beamer legt unter /rb/<CODE> einen Raum an und lauscht dort. Das Pad schreibt Ereignisse und den Spielstand in denselben Raum.
+  // Das läuft über normales Internet (HTTPS) und funktioniert dadurch auch im Mobilfunknetz.
+  // >>> HIER die Adresse der eigenen Firebase Realtime Database eintragen (siehe README), z. B.
+  // >>> 'https://mein-projekt-default-rtdb.europe-west1.firebasedatabase.app'
+  const FIREBASE_DB_URL = 'https://rb-party-default-rtdb.europe-west1.firebasedatabase.app';
+  const HOST_STALE_MS = 180000;
+  function fbBase(){ const u = String(FIREBASE_DB_URL||'').trim().replace(/\/+$/,''); return /^https:\/\/[^\s]+$/.test(u) ? u : ''; }
+  function fbUrl(code, node){ return fbBase() + '/rb/' + code + '/' + node + '.json'; }
+  function fbGet(code, node){ return fetch(fbUrl(code,node), {cache:'no-store'}).then(r=>{ if(!r.ok) throw new Error('http'+r.status); return r.json(); }); }
+  function fbPut(code, node, value){ return fetch(fbUrl(code,node), {method:'PUT', body:JSON.stringify(value)}).then(r=>{ if(!r.ok) throw new Error('http'+r.status); }); }
+  function fbDel(code, node){ try{ return fetch(fbUrl(code,node), {method:'DELETE'}).catch(()=>{}); }catch(e){ return Promise.resolve(); } }
 
   // ---- Pad-Seite: verbindet sich mit dem Code, den der Beamer anzeigt ----
-  const padLink = { peer:null, conn:null, code:'', want:false, status:'aus', retry:null, onStatus:null };
+  const padLink = { code:'', want:false, ok:false, gen:0, status:'aus', timer:null, retry:null, onStatus:null, evQ:Promise.resolve(), stPending:null, stBusy:false, fails:0 };
   function padLinkSetStatus(s){ padLink.status = s; if(padLink.onStatus){ try{ padLink.onStatus(s, padLink.code); }catch(e){} } }
+  // Daten werden als Text (JSON-String) abgelegt, weil Firebase leere Listen und Objekte sonst verschluckt.
   function padLinkSend(msg){
-    if(padLink.conn && padLink.conn.open){ try{ padLink.conn.send(msg); }catch(e){} }
+    if(!padLink.ok) return;
+    const code = padLink.code, body = JSON.stringify(msg);
+    padLink.evQ = padLink.evQ.then(()=>fbPut(code,'ev',body)).catch(()=>{ padLink.fails++; });
+  }
+  function padLinkPumpState(){
+    if(padLink.stBusy || padLink.stPending === null) return;
+    const body = padLink.stPending; padLink.stPending = null; padLink.stBusy = true;
+    fbPut(padLink.code, 'state', body).catch(()=>{ padLink.fails++; }).then(()=>{ padLink.stBusy = false; padLinkPumpState(); });
   }
   function padLinkSendState(st){
-    if(padLink.conn && padLink.conn.open){ try{ padLink.conn.send({ screen:'__state', data:st, seq:-1, t:Date.now() }); }catch(e){} }
+    if(!padLink.ok) return;
+    try{ padLink.stPending = JSON.stringify(st); }catch(e){ return; }
+    padLinkPumpState();
   }
   function padLinkClose(){
-    padLink.want = false;
-    clearTimeout(padLink.retry);
-    try{ if(padLink.conn) padLink.conn.close(); }catch(e){}
-    try{ if(padLink.peer) padLink.peer.destroy(); }catch(e){}
-    padLink.conn = null; padLink.peer = null;
+    const code = padLink.code;
+    padLink.want = false; padLink.ok = false; padLink.gen++;
+    clearInterval(padLink.timer); clearTimeout(padLink.retry);
+    if(code && fbBase()) fbDel(code, 'pad');
     try{ localStorage.removeItem('rbparty_pad_code'); }catch(e){}
     padLinkSetStatus('aus');
   }
   function padLinkConnect(code){
     code = String(code||'').replace(/\D/g,'').slice(0,4);
     if(code.length !== 4){ padLinkSetStatus('fehler:Bitte den 4-stelligen Code vom Beamer eingeben.'); return; }
-    clearTimeout(padLink.retry);
-    try{ if(padLink.conn) padLink.conn.close(); }catch(e){}
-    try{ if(padLink.peer) padLink.peer.destroy(); }catch(e){}
-    padLink.code = code; padLink.want = true; padLink.conn = null; padLink.peer = null;
+    if(!fbBase()){ padLinkSetStatus('fehler:In der App fehlt die Firebase-Adresse (FIREBASE_DB_URL).'); return; }
+    clearInterval(padLink.timer); clearTimeout(padLink.retry);
+    padLink.code = code; padLink.want = true; padLink.ok = false;
+    const mine = ++padLink.gen;
     padLinkSetStatus('verbinde');
-    loadPeerLib().then(()=>{
-      if(!padLink.want || padLink.code !== code) return;
-      const peer = new window.Peer(undefined, PEER_OPTS);
-      padLink.peer = peer;
-      const again = (msg)=>{
-        if(!padLink.want || padLink.peer !== peer) return;
-        padLink.conn = null;
-        padLinkSetStatus(msg || 'verbinde');
-        clearTimeout(padLink.retry);
-        padLink.retry = setTimeout(()=>{ if(padLink.want && padLink.code === code) padLinkConnect(code); }, 3500);
-      };
-      peer.on('open', ()=>{
-        const conn = peer.connect(PEER_PREFIX + code, { reliable:true });
-        // Wenn nach 20 s noch nichts steht, neu versuchen und Hinweis zeigen
-        const giveUp = setTimeout(()=>{ if(!conn.open) again('fehler:Verbindung kommt nicht zustande (Mobilfunk/WLAN blockiert?). Es wird weiter versucht …'); }, 20000);
-        conn.on('open', ()=>{
-          clearTimeout(giveUp);
-          if(padLink.peer !== peer) return;
-          padLink.conn = conn;
-          try{ localStorage.setItem('rbparty_pad_code', code); }catch(e){}
-          padLinkSetStatus('verbunden');
-          padLinkSendState(state);
-        });
-        conn.on('close', ()=>again('verbinde'));
-        conn.on('error', ()=>again('verbinde'));
-      });
-      peer.on('error', err=>{
-        if(err && err.type === 'peer-unavailable') again('fehler:Code nicht gefunden – am Beamer prüfen. Es wird weiter versucht …');
-        else again('fehler:Keine Verbindung zum Vermittlungsserver (Fehler: ' + ((err && err.type) || 'unbekannt') + '). Es wird weiter versucht …');
-      });
-      peer.on('disconnected', ()=>{ try{ peer.reconnect(); }catch(e){} });
-    }).catch(()=>{
-      padLinkSetStatus('fehler:Internet nötig – Verbindungs-Baustein konnte nicht geladen werden.');
+    const retry = (msg)=>{
+      if(!padLink.want || padLink.gen !== mine) return;
+      padLink.ok = false; clearInterval(padLink.timer);
+      padLinkSetStatus(msg || 'verbinde');
       clearTimeout(padLink.retry);
-      padLink.retry = setTimeout(()=>{ if(padLink.want && padLink.code === code) padLinkConnect(code); }, 5000);
-    });
+      padLink.retry = setTimeout(()=>{ if(padLink.want && padLink.gen === mine) padLinkConnect(code); }, 4000);
+    };
+    fbGet(code, 'host').then(h=>{
+      if(!padLink.want || padLink.gen !== mine) return;
+      if(!h || !h.t || Math.abs(Date.now() - h.t) > HOST_STALE_MS){ retry('fehler:Code nicht gefunden – am Beamer prüfen. Es wird weiter versucht …'); return; }
+      padLink.ok = true; padLink.fails = 0;
+      try{ localStorage.setItem('rbparty_pad_code', code); }catch(e){}
+      padLinkSetStatus('verbunden');
+      padLinkSendState(state);
+      const beat = ()=>{
+        fbPut(code, 'pad', {t:Date.now()}).catch(()=>{ padLink.fails++; });
+        fbGet(code, 'host').then(h2=>{
+          if(padLink.gen !== mine || !padLink.want) return;
+          if(!h2 || !h2.t || Math.abs(Date.now() - h2.t) > HOST_STALE_MS) retry('fehler:Beamer meldet sich nicht mehr. Es wird weiter versucht …');
+          else if(padLink.fails >= 3){ padLink.fails = 0; retry('verbinde'); }
+          else if(padLink.status !== 'verbunden') padLinkSetStatus('verbunden');
+        }).catch(()=>{ padLink.fails++; if(padLink.fails >= 3) retry('fehler:Keine Verbindung zum Server (Internet?). Es wird weiter versucht …'); });
+      };
+      beat();
+      padLink.timer = setInterval(beat, 10000);
+    }).catch(()=>retry('fehler:Keine Verbindung zum Server (Internet?). Es wird weiter versucht …'));
   }
 
   document.addEventListener('pointerdown', function(e){
@@ -9383,58 +9366,73 @@ function waldfestSceneMarkup(){
     });
     setInterval(()=>{ if(currentScreenType==='base') renderBase(); }, 4000);
 
-    // ---------- Kopplung über 4-stelligen Code: der Beamer ist der Gastgeber, das Pad verbindet sich ----------
-    const bmLink = window.__bmLink = { code:'', linked:false, onChange:null };
+    // ---------- Kopplung über 4-stelligen Code: der Beamer legt einen Raum in der Firebase-Datenbank an, das Pad schreibt hinein ----------
+    const bmLink = window.__bmLink = { code:'', linked:false, err:'', onChange:null };
     const bmLinkChanged = ()=>{ if(bmLink.onChange){ try{ bmLink.onChange(); }catch(e){} } };
     function onPadMessage(msg){
       if(!msg || !msg.screen) return;
-      if(msg.screen === '__state'){
-        remoteGameState = msg.data || null;
-        if(currentScreenType === 'base') renderBase();
-        return;
-      }
       if(msg.seq !== lastSeq){ lastSeq = msg.seq; renderScreen(msg); }
     }
-    let hostPeer = null, hostConn = null, hostRetry = null;
-    function newHostCode(fresh){
-      let c = '';
-      if(!fresh){ try{ c = localStorage.getItem('rbparty_beamer_code') || ''; }catch(e){} }
-      if(!/^\d{4}$/.test(c)) c = String(1000 + Math.floor(Math.random()*9000));
-      return c;
+    let hostTimer = null, hostRetry = null, padWatch = null, hostCode = '', hostStreams = [], lastPadSeen = 0;
+    function stopHost(){
+      clearTimeout(hostRetry); clearInterval(hostTimer); clearInterval(padWatch);
+      hostStreams.forEach(s=>{ try{ s.close(); }catch(e){} });
+      hostStreams = [];
+    }
+    // Live-Verbindung zu einem Eintrag der Datenbank (Server-Sent Events). Der erste Treffer ist der bereits gespeicherte Wert.
+    function openStream(code, node, onData){
+      let first = true;
+      const es = new EventSource(fbUrl(code, node));
+      const h = e=>{ let d; try{ d = JSON.parse(e.data); }catch(err){ return; } const isFirst = first; first = false; onData(d ? d.data : null, isFirst); };
+      es.addEventListener('put', h);
+      es.addEventListener('patch', h);
+      hostStreams.push(es);
+    }
+    function goLive(code){
+      hostCode = code;
+      try{ localStorage.setItem('rbparty_beamer_code', code); }catch(e){}
+      bmLink.err = ''; bmLink.code = code; bmLinkChanged();
+      hostTimer = setInterval(()=>{ fbPut(code, 'host', {t:Date.now()}).catch(()=>{}); }, 20000);
+      openStream(code, 'ev', (raw, isFirst)=>{
+        if(isFirst || typeof raw !== 'string') return; // alter Stand aus früherer Sitzung wird nicht abgespielt
+        try{ onPadMessage(JSON.parse(raw)); }catch(e){}
+      });
+      openStream(code, 'state', (raw)=>{
+        if(typeof raw !== 'string') return;
+        try{ remoteGameState = JSON.parse(raw); if(currentScreenType === 'base') renderBase(); }catch(e){}
+      });
+      openStream(code, 'pad', (val, isFirst)=>{
+        if(isFirst) return; // Herzschlag des Pads: jedes neue Signal heißt „verbunden“
+        lastPadSeen = Date.now();
+        if(!bmLink.linked){ bmLink.linked = true; bmLinkChanged(); }
+      });
+      padWatch = setInterval(()=>{
+        if(bmLink.linked && Date.now() - lastPadSeen > 35000){ bmLink.linked = false; bmLinkChanged(); }
+      }, 5000);
     }
     function startHost(fresh){
-      clearTimeout(hostRetry);
-      try{ if(hostConn) hostConn.close(); }catch(e){}
-      try{ if(hostPeer) hostPeer.destroy(); }catch(e){}
-      hostPeer = null; hostConn = null; bmLink.linked = false; bmLink.code = ''; bmLinkChanged();
-      loadPeerLib().then(()=>{
-        const code = newHostCode(fresh);
-        const peer = new window.Peer(PEER_PREFIX + code, PEER_OPTS);
-        hostPeer = peer;
-        peer.on('open', ()=>{
-          bmLink.err = ''; bmLink.code = code; bmLinkChanged();
-          try{ localStorage.setItem('rbparty_beamer_code', code); }catch(e){}
+      stopHost();
+      bmLink.linked = false; bmLink.code = ''; bmLinkChanged();
+      if(!fbBase()){ bmLink.err = 'Firebase-Adresse fehlt'; bmLinkChanged(); return; }
+      let saved = '';
+      if(!fresh){ try{ saved = localStorage.getItem('rbparty_beamer_code') || ''; }catch(e){} }
+      const tryCode = (n)=>{
+        const own = n === 0 && /^\d{4}$/.test(saved);
+        const code = own ? saved : String(1000 + Math.floor(Math.random()*9000));
+        fbGet(code, 'host').then(h=>{
+          const taken = !own && h && h.t && Math.abs(Date.now() - h.t) < HOST_STALE_MS;
+          if(taken){ if(n < 12) tryCode(n+1); else { bmLink.err = 'keine freie Zahl'; bmLinkChanged(); } return; }
+          return fbPut(code, 'host', {t:Date.now()}).then(()=>{ goLive(code); });
+        }).catch(()=>{
+          bmLink.err = 'keine Verbindung zum Server'; bmLinkChanged();
+          hostRetry = setTimeout(()=>startHost(fresh), 6000);
         });
-        peer.on('connection', conn=>{
-          // Wer zuerst verbunden ist, bleibt verbunden (Schutz gegen Dazwischenfunken). Neuer Code: auf das Codefeld tippen.
-          if(hostConn && hostConn.open){ try{ conn.on('open', ()=>conn.close()); }catch(e){} return; }
-          hostConn = conn;
-          conn.on('open', ()=>{ bmLink.linked = true; bmLinkChanged(); });
-          conn.on('data', onPadMessage);
-          const lost = ()=>{ if(hostConn === conn){ hostConn = null; bmLink.linked = false; bmLinkChanged(); } };
-          conn.on('close', lost); conn.on('error', lost);
-        });
-        peer.on('error', err=>{
-          bmLink.err = (err && err.type) || 'unbekannt'; bmLinkChanged();
-          if(err && err.type === 'unavailable-id'){ try{ localStorage.removeItem('rbparty_beamer_code'); }catch(e){} hostRetry = setTimeout(()=>startHost(true), 300); }
-          else if(err && (err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error' || err.type === 'socket-closed')){ hostRetry = setTimeout(()=>startHost(false), 5000); }
-        });
-        peer.on('disconnected', ()=>{ try{ peer.reconnect(); }catch(e){} });
-      }).catch(()=>{ hostRetry = setTimeout(()=>startHost(false), 8000); });
+      };
+      tryCode(0);
     }
-    bmLink.renew = ()=>startHost(true);
+    bmLink.renew = ()=>{ const old = hostCode; if(old) fbDel(old, 'host'); startHost(true); };
     let inFrame = false; try{ inFrame = window.self !== window.top; }catch(e){ inFrame = true; }
-    if(/^https?:$/.test(location.protocol) && !inFrame) startHost(false); // Vorschau-Fenster im Pad (iframe) hostet nicht
+    if(/^https?:$/.test(location.protocol) && !inFrame) startHost(false); // Vorschau-Fenster im Pad (iframe) legt keinen Raum an
 
     let mgBeamerActivePrev = false;
     setInterval(()=>{

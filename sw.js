@@ -1,6 +1,6 @@
 ﻿// RB-Party Service Worker – macht die App offline startbar.
 // Bei jeder neuen Version der App VERSION erhöhen, damit alte Dateien ersetzt werden.
-const VERSION = 'rbparty-v2.3.55';
+const VERSION = 'rbparty-v2.3.56';
 const APP_FILES = [
   './',
   'index.html',
@@ -61,6 +61,7 @@ self.addEventListener('fetch', event => {
     }))
   );
 });
+
 
 
 
