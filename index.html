@@ -825,6 +825,18 @@ window.addEventListener('unhandledrejection', function(e){
   // ================= KOPPLUNG ÜBER 4-STELLIGEN CODE (Pad und Beamer auf zwei Geräten, per WebRTC/PeerJS) =================
   const PEER_LIB_URL = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
   const PEER_PREFIX = 'rbparty-';
+  // Verbindungshelfer: STUN findet die öffentliche Adresse, TURN leitet den Verkehr um, wenn es direkt nicht geht (Mobilfunk, CGNAT, strenge WLANs).
+  // Die TURN-Zugangsdaten unten sind der öffentliche Gratis-Testzugang von Open Relay (metered.ca). Für dauerhaft stabile Verbindung
+  // dort ein kostenloses Konto anlegen und die drei Zeilen mit username/credential durch die eigenen Daten ersetzen.
+  const TURN_USER = 'openrelayproject', TURN_PASS = 'openrelayproject';
+  const PEER_OPTS = { debug:0, config:{ iceCandidatePoolSize:4, iceServers:[
+    { urls:'stun:stun.l.google.com:19302' },
+    { urls:'stun:openrelay.metered.ca:80' },
+    { urls:'turn:openrelay.metered.ca:80', username:TURN_USER, credential:TURN_PASS },
+    { urls:'turn:openrelay.metered.ca:443', username:TURN_USER, credential:TURN_PASS },
+    { urls:'turn:openrelay.metered.ca:443?transport=tcp', username:TURN_USER, credential:TURN_PASS },
+    { urls:'turns:openrelay.metered.ca:443?transport=tcp', username:TURN_USER, credential:TURN_PASS }
+  ] } };
   let peerLibPromise = null;
   function loadPeerLib(){
     if(window.Peer) return Promise.resolve();
@@ -867,7 +879,7 @@ window.addEventListener('unhandledrejection', function(e){
     padLinkSetStatus('verbinde');
     loadPeerLib().then(()=>{
       if(!padLink.want || padLink.code !== code) return;
-      const peer = new window.Peer();
+      const peer = new window.Peer(undefined, PEER_OPTS);
       padLink.peer = peer;
       const again = (msg)=>{
         if(!padLink.want || padLink.peer !== peer) return;
@@ -878,7 +890,10 @@ window.addEventListener('unhandledrejection', function(e){
       };
       peer.on('open', ()=>{
         const conn = peer.connect(PEER_PREFIX + code, { reliable:true });
+        // Wenn nach 20 s noch nichts steht, neu versuchen und Hinweis zeigen
+        const giveUp = setTimeout(()=>{ if(!conn.open) again('fehler:Verbindung kommt nicht zustande (Mobilfunk/WLAN blockiert?). Es wird weiter versucht …'); }, 20000);
         conn.on('open', ()=>{
+          clearTimeout(giveUp);
           if(padLink.peer !== peer) return;
           padLink.conn = conn;
           try{ localStorage.setItem('rbparty_pad_code', code); }catch(e){}
@@ -9394,7 +9409,7 @@ function waldfestSceneMarkup(){
       hostPeer = null; hostConn = null; bmLink.linked = false; bmLink.code = ''; bmLinkChanged();
       loadPeerLib().then(()=>{
         const code = newHostCode(fresh);
-        const peer = new window.Peer(PEER_PREFIX + code);
+        const peer = new window.Peer(PEER_PREFIX + code, PEER_OPTS);
         hostPeer = peer;
         peer.on('open', ()=>{
           bmLink.code = code; bmLinkChanged();
