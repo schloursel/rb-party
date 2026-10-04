@@ -905,7 +905,7 @@ window.addEventListener('unhandledrejection', function(e){
       });
       peer.on('error', err=>{
         if(err && err.type === 'peer-unavailable') again('fehler:Code nicht gefunden – am Beamer prüfen. Es wird weiter versucht …');
-        else again('fehler:Keine Verbindung zum Vermittlungsserver. Es wird weiter versucht …');
+        else again('fehler:Keine Verbindung zum Vermittlungsserver (Fehler: ' + ((err && err.type) || 'unbekannt') + '). Es wird weiter versucht …');
       });
       peer.on('disconnected', ()=>{ try{ peer.reconnect(); }catch(e){} });
     }).catch(()=>{
@@ -9412,7 +9412,7 @@ function waldfestSceneMarkup(){
         const peer = new window.Peer(PEER_PREFIX + code, PEER_OPTS);
         hostPeer = peer;
         peer.on('open', ()=>{
-          bmLink.code = code; bmLinkChanged();
+          bmLink.err = ''; bmLink.code = code; bmLinkChanged();
           try{ localStorage.setItem('rbparty_beamer_code', code); }catch(e){}
         });
         peer.on('connection', conn=>{
@@ -9425,6 +9425,7 @@ function waldfestSceneMarkup(){
           conn.on('close', lost); conn.on('error', lost);
         });
         peer.on('error', err=>{
+          bmLink.err = (err && err.type) || 'unbekannt'; bmLinkChanged();
           if(err && err.type === 'unavailable-id'){ try{ localStorage.removeItem('rbparty_beamer_code'); }catch(e){} hostRetry = setTimeout(()=>startHost(true), 300); }
           else if(err && (err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error' || err.type === 'socket-closed')){ hostRetry = setTimeout(()=>startHost(false), 5000); }
         });
@@ -9482,7 +9483,7 @@ function waldfestSceneMarkup(){
       let framed = false; try{ framed = window.self !== window.top; }catch(e){ framed = true; }
       const upd = ()=>{
         if(framed){ chip.style.display = 'none'; return; }
-        if(!L || !L.code){ chip.style.display = /^https?:$/.test(location.protocol) ? 'flex' : 'none'; chip.className = ''; chip.innerHTML = '<span class="bml-lbl">Pad-Code</span><b>····</b>'; return; }
+        if(!L || !L.code){ chip.style.display = /^https?:$/.test(location.protocol) ? 'flex' : 'none'; chip.className = ''; chip.innerHTML = '<span class="bml-lbl">Pad-Code</span><b>····</b>' + (L && L.err ? '<span class="bml-lbl">Fehler: ' + L.err + '</span>' : ''); return; }
         chip.style.display = 'flex';
         if(L.linked){ chip.className = 'on'; chip.innerHTML = '<span class="bml-dot"></span><span class="bml-lbl">Pad verbunden</span>'; }
         else { chip.className = ''; chip.innerHTML = '<span class="bml-lbl">Pad-Code</span><b>' + L.code + '</b>'; }
