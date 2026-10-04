@@ -560,33 +560,291 @@
     .section-head > div{ width:100%; }
     .section-head .pill-btn{ flex:1 1 40%; padding:12px 14px; font-size:15px; text-align:center; }
   }
+
+  /* =====================================================================
+     2.3.54 – GAMEPAD-REDESIGN (nur #app, der Beamer bleibt unberührt)
+     Farben: hier an einer Stelle anpassen (Rottenberg-Wappen-Palette).
+     ===================================================================== */
+  :root{
+    /* Rottenberg-Wappen: Gold (Streifen) als neutrale Hauptfarbe. Rot und Grün bleiben Warn-/Erfolgsfarben (--bad / --good). */
+    --wp-primary:#7E6226;      /* gedecktes Wappengold (dunkel genug für helle Schrift im Hell-Theme) */
+    --wp-primary-soft:#9A7B34;
+    --wp-primary-rgb:126,98,38;
+    --wp-gold:#7E6226;         /* Hervorhebungen, Schritt-Anzeige */
+    --nav-h:68px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --wp-primary:#B8923F; --wp-primary-soft:#CDA959; --wp-primary-rgb:184,146,63; --wp-gold:#B8923F; }
+  }
+  :root[data-theme="dark"]{ --wp-primary:#B8923F; --wp-primary-soft:#CDA959; --wp-primary-rgb:184,146,63; --wp-gold:#B8923F; }
+  #app{
+    --accent:var(--wp-primary); --accent-soft:var(--wp-primary-soft); --accent-rgb:var(--wp-primary-rgb);
+    --mono:'Oswald','Arial Narrow',sans-serif;
+    font-family:'Oswald','Arial Narrow',Impact,sans-serif; font-variant-numeric:tabular-nums; letter-spacing:.01em;
+  }
+  #app button, #app input, #app select, #app textarea, #app .pill-btn{ font-family:inherit; }
+  #app .brand{ font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+  #app .brand .sub{ color:var(--wp-gold); font-weight:500; letter-spacing:.14em; font-size:13px; }
+  #app h2.section-title{ font-size:15px; letter-spacing:.2em; color:var(--text-soft); font-weight:600; }
+  #app .flow-player{ font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+  #app .desc, #app .modal-sub, #app .flow-question{ font-weight:300; }
+  #app .flow-question{ color:var(--text-soft); font-weight:400; }
+  #app .pill-btn{ font-weight:600; letter-spacing:.04em; text-transform:uppercase; }
+  #app .choice-btn{ font-weight:600; letter-spacing:.02em; min-width:0; overflow-wrap:break-word; hyphens:auto; line-height:1.15; }
+  @media (max-width:780px){ #app .choice-btn{ font-size:15px; gap:10px; padding:12px; } #app .choice-btn .ico{ width:36px; height:36px; } }
+
+  /* Inline-Symbole (ersetzen die Emojis) */
+  .ic{ width:1.15em; height:1.15em; flex:0 0 auto; vertical-align:-.2em; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; overflow:visible; }
+  .ic .f{ fill:currentColor; stroke:none; }
+  #app .choice-btn .ico{ display:inline-flex; width:40px; height:40px; align-items:center; justify-content:center; border-radius:12px; background:rgba(var(--accent-rgb),.12); color:var(--accent); flex:0 0 auto; }
+  #app .choice-btn .ico .ic{ width:24px; height:24px; }
+  #app .flow-player .ic{ color:var(--wp-gold); }
+
+  /* ---------- Kopfzeile ---------- */
+  #app header{ position:relative; z-index:40; display:flex; flex-wrap:nowrap; align-items:center; justify-content:space-between; gap:12px 16px; padding:10px 24px; padding-top:max(10px, env(safe-area-inset-top)); }
+  #app header::after{ display:none; }
+  #app .status-strip{ display:flex; flex-wrap:nowrap; align-items:center; justify-content:flex-end; gap:10px; flex:1; min-width:0; }
+  #app .status-strip > *{ order:0; margin:0; }
+  #app .status-strip > .chip-turn{ order:1; } #app .status-strip > .chip-round{ order:2; }
+  #app .status-strip > #undoBtn{ order:3; } #app .status-strip > #beamerStatusChip{ order:4; }
+  #app .status-strip > .menu-wrap{ order:5; }
+  #app .status-chip{ padding:7px 14px; font-size:16px; }
+  #app .chip-turn, #app .chip-round{ padding:5px 10px; gap:6px; }
+  #app .status-chip .label{ font-size:11.5px; letter-spacing:.1em; display:inline-flex; align-items:center; gap:4px; }
+  #app .status-chip select{ font-weight:600; font-family:inherit; }
+  #app .hdr-undo{ border:1.5px solid var(--sep-strong); color:var(--text); font-weight:600; cursor:pointer; }
+  #app .hdr-undo:hover:not(:disabled){ border-color:var(--accent); color:var(--accent); }
+  #app .live-chip{ color:var(--accent); font-weight:600; background:rgba(var(--accent-rgb),.14); border:1.5px solid rgba(var(--accent-rgb),.5); gap:8px; }
+  #app .live-chip[hidden]{ display:none; }
+  #app .live-chip::before{ content:''; width:9px; height:9px; border-radius:50%; background:var(--accent); animation:lvPulse 1.8s ease-in-out infinite; }
+  @keyframes lvPulse{ 0%,100%{ opacity:1; transform:scale(1);} 50%{ opacity:.35; transform:scale(.7);} }
+  #app .hdr-btn{ display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0 16px; border-radius:100px; border:1.5px solid var(--sep-strong); background:var(--surface); color:var(--text); font-size:16px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; cursor:pointer; box-shadow:var(--shadow); }
+  #app .hdr-btn[aria-expanded="true"]{ border-color:var(--accent); color:var(--accent); }
+  #app .hdr-btn.linked{ border-color:var(--accent); }
+  #app .menu-caret{ font-size:11px; opacity:.7; }
+  #app .menu-wrap{ position:relative; }
+  #app .menu-pop{ position:absolute; right:0; top:calc(100% + 8px); width:340px; max-width:calc(100vw - 24px); background:var(--surface); border:1px solid var(--sep-strong); border-radius:var(--radius-lg); box-shadow:0 18px 50px rgba(0,0,0,.28); padding:8px; z-index:60; animation:menuIn .16s ease-out; }
+  #app .menu-pop[hidden]{ display:none; }
+  @keyframes menuIn{ from{ opacity:0; transform:translateY(-6px);} to{ opacity:1; transform:none;} }
+  #app .menu-title{ font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--text-faint); padding:8px 12px 6px; font-weight:600; }
+  #app .menu-item{ display:flex; align-items:center; gap:14px; width:100%; min-height:56px; padding:10px 12px; border:none; border-radius:14px; background:transparent; color:var(--text); text-align:left; text-decoration:none; font-size:16px; cursor:pointer; box-sizing:border-box; }
+  #app .menu-item:hover{ background:var(--surface-alt); }
+  #app .mi-ico{ display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:12px; background:var(--surface-alt); color:var(--accent); flex:0 0 auto; font-size:20px; }
+  #app .mi-ico .ic{ width:22px; height:22px; }
+  #app .mi-txt{ min-width:0; }
+  #app .mi-txt b{ display:block; font-weight:600; font-size:16px; letter-spacing:.03em; }
+  #app .mi-txt small{ display:block; font-size:13px; color:var(--text-soft); font-weight:300; line-height:1.3; margin-top:1px; letter-spacing:.01em; }
+  #app .menu-item.linked .mi-ico{ background:var(--accent); color:var(--bg); }
+  #app .menu-item.install-hint{ display:none; } #app .menu-item.install-hint.show{ display:flex; }
+  #app #boardAutoChip.active .mi-ico{ background:var(--accent); color:var(--bg); }
+  #app #boardAutoChip.active .mi-txt b{ color:var(--accent); }
+  #app .status-chip .label{ white-space:nowrap; }
+  #app .stat-label{ display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
+
+  /* Fragezeichen-Hinweise */
+  #app .qmark{ display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; padding:0; border-radius:50%; border:1.5px solid var(--text-faint); background:transparent; color:var(--text-faint); font-size:12px; font-weight:700; line-height:1; cursor:pointer; vertical-align:middle; flex:0 0 auto; }
+  #app .qmark:hover, #app .qmark.open{ border-color:var(--accent); color:var(--accent); }
+  #app .qmark.static{ cursor:default; margin:0 2px; }
+  #tipBubble{ position:fixed; z-index:200; max-width:min(300px, calc(100vw - 24px)); padding:12px 14px; border-radius:14px; background:var(--text); color:var(--bg); font:300 15px/1.4 'Oswald','Arial Narrow',sans-serif; letter-spacing:.01em; box-shadow:0 12px 32px rgba(0,0,0,.35); pointer-events:none; animation:menuIn .14s ease-out; }
+  #tipBubble[hidden]{ display:none; }
+
+  /* ---------- Navigation: links (Tablet/PC), unten (Handy) ---------- */
+  #app nav.rail{ width:200px; padding:16px 12px; gap:6px; }
+  #app nav.rail button{ display:flex; align-items:center; gap:14px; min-height:52px; padding:10px 14px; font-size:17px; font-weight:500; letter-spacing:.04em; text-transform:uppercase; border-radius:14px; }
+  #app nav.rail button .rb-ico{ display:inline-flex; width:26px; height:26px; align-items:center; justify-content:center; font-size:22px; flex:0 0 auto; }
+  #app nav.rail button .rb-ico .ic{ width:24px; height:24px; }
+  #app nav.rail button .short{ display:none; }
+  #app nav.rail button.active{ background:rgba(var(--accent-rgb),.14); color:var(--accent); box-shadow:inset 3px 0 0 var(--accent); }
+  #app .info-strip{ padding:0 24px; }
+  #app .info-strip .status-chip{ font-size:15px; margin:8px 0 0; }
+
+  /* ---------- Schrittanzeige im Spielzug ---------- */
+  .flow-steps{ list-style:none; display:flex; align-items:center; gap:0; margin:0 0 22px; padding:0; }
+  .flow-steps li{ flex:1 1 0; display:flex; flex-direction:column; align-items:center; gap:6px; position:relative; color:var(--text-faint); min-width:0; }
+  .flow-steps li::before{ content:''; position:absolute; top:17px; right:50%; width:100%; height:3px; background:var(--sep-strong); z-index:0; }
+  .flow-steps li:first-child::before{ display:none; }
+  .flow-steps li.done::before, .flow-steps li.current::before{ background:var(--accent); }
+  .flow-steps .fs-dot{ position:relative; z-index:1; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:600; background:var(--surface-alt); border:2px solid var(--sep-strong); color:var(--text-soft); transition:background .2s, border-color .2s, transform .2s; }
+  .flow-steps li.done .fs-dot{ background:var(--accent); border-color:var(--accent); color:var(--bg); }
+  .flow-steps li.current .fs-dot{ background:var(--surface); border-color:var(--wp-gold); color:var(--wp-gold); transform:scale(1.12); box-shadow:0 0 0 4px rgba(var(--accent-rgb),.12); }
+  .flow-steps .fs-lbl{ font-size:13px; letter-spacing:.12em; text-transform:uppercase; font-weight:500; }
+  .flow-steps li.current .fs-lbl{ color:var(--text); font-weight:700; }
+  #flowPanel > .flow-steps ~ *{ animation:fsIn .28s ease-out both; }
+  @keyframes fsIn{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:none;} }
+  #app .flow-hero-btn{ min-height:84px; font-size:28px !important; letter-spacing:.08em; }
+
+  /* Hilfe */
+  .help-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+  .help-card{ background:var(--surface); border-radius:var(--radius-lg); padding:22px 24px; box-shadow:var(--shadow); }
+  .help-card h3{ margin:0 0 12px; font-size:19px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--wp-gold); }
+  .help-card p, .help-card li, .help-card dd{ font-size:16px; font-weight:300; line-height:1.55; color:var(--text); }
+  .help-card ul, .help-card ol{ margin:0; padding-left:20px; }
+  .help-card li{ margin-bottom:6px; }
+  .help-card dl{ margin:0; } .help-card dt{ font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:14px; margin-top:12px; color:var(--text-soft); } .help-card dd{ margin:2px 0 0; }
+  .help-card b{ font-weight:600; }
+
+  /* ---------- Tablet ---------- */
+  @media (max-width: 1100px){
+    #app nav.rail{ width:84px; padding:12px 6px; }
+    #app nav.rail button{ flex-direction:column; justify-content:center; gap:4px; padding:10px 4px; min-height:64px; font-size:12px; text-align:center; box-shadow:none !important; }
+    #app nav.rail button .rb-txt{ line-height:1.1; }
+    #app nav.rail button .long{ display:none; } #app nav.rail button .short{ display:inline; }
+    #app .hdr-btn .hdr-label{ display:none; }
+    #app .hdr-btn{ padding:0 14px; }
+  }
+
+  /* ---------- Handy ---------- */
+  @media (max-width: 780px){
+    #app header{ flex-wrap:wrap; padding:8px 12px; padding-top:max(8px, env(safe-area-inset-top)); gap:8px; }
+    #app .brand{ order:0; flex:1 1 0; min-width:0; font-size:17px; gap:8px; }
+    #app .brand .brand-text{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    #app .brand .sub{ display:none; }
+    #app .brand #brandLogo svg{ width:36px; height:36px; }
+    #app .menu-caret{ display:none; }
+    #app header::after{ display:block; content:''; order:3; flex:0 0 100%; height:0; margin-bottom:-8px; }
+    #app .hdr-btn{ padding:0 13px; }
+    #app .status-strip{ display:contents; }
+    #app .status-strip > #undoBtn{ order:1; flex:0 0 auto; padding:0 13px; min-height:44px; }
+    #app .status-strip > #undoBtn .hdr-label{ display:none; }
+    #app .status-strip > .menu-wrap{ order:2; position:static; }
+    #app .status-strip > .chip-turn{ order:4; flex:1 1 56%; justify-content:space-between; }
+    #app .status-strip > .chip-round{ order:5; flex:1 1 34%; justify-content:space-between; }
+    #app .status-strip > #beamerStatusChip{ order:6; flex:1 1 100%; justify-content:center; }
+    #app .menu-pop{ position:absolute; left:12px; right:12px; top:100%; width:auto; max-width:none; margin-top:4px; max-height:calc(100vh - 130px); overflow:auto; }
+    #app .status-chip .label .qmark{ display:none; }
+    #app .player-strip{ padding:8px 12px; }
+    #app .info-strip{ padding:0 12px; }
+
+    #app nav.rail{ position:fixed; left:0; right:0; bottom:0; top:auto; width:100%; height:var(--nav-h); flex-direction:row; justify-content:space-around; gap:0; padding:4px 4px calc(4px + env(safe-area-inset-bottom)); height:auto; min-height:var(--nav-h); border:none; border-top:1px solid var(--sep-strong); background:var(--surface); z-index:45; overflow:visible; box-shadow:0 -6px 20px rgba(0,0,0,.12); }
+    #app nav.rail button{ flex:1 1 0; min-width:0; flex-direction:column; justify-content:center; gap:3px; padding:6px 1px; min-height:58px; font-size:10px; letter-spacing:.01em; border-radius:12px; text-align:center; box-shadow:none !important; }
+    #app nav.rail button .rb-ico{ width:26px; height:26px; }
+    #app nav.rail button .rb-txt{ line-height:1.1; max-width:100%; }
+    #app nav.rail button .long{ display:none; } #app nav.rail button .short{ display:inline; }
+    #app main{ padding:14px 12px calc(var(--nav-h) + 40px + env(safe-area-inset-bottom)); }
+    #app .flow-next-wrap{ bottom:calc(var(--nav-h) + env(safe-area-inset-bottom)); }
+    .flow-steps .fs-dot{ width:32px; height:32px; font-size:15px; }
+    .flow-steps li::before{ top:15px; }
+    .flow-steps .fs-lbl{ font-size:11.5px; letter-spacing:.08em; }
+    #app .flow-hero-btn{ min-height:76px; font-size:24px !important; }
+  }
+  /* ---------- „Als Nächstes“-Hinweis (Spielzug, Rundenende, Turnier) ---------- */
+  .flow-hint{ display:flex; align-items:center; gap:12px; margin:0 0 18px; padding:10px 14px; border-radius:14px; background:rgba(var(--accent-rgb),.10); border-left:4px solid var(--wp-gold); }
+  .flow-hint .fh-tag{ flex:0 0 auto; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--wp-gold); }
+  .flow-hint .fh-txt{ font-size:16px; font-weight:400; line-height:1.35; color:var(--text); }
+  .flow-hint .fh-txt b{ font-weight:700; }
+  @media (max-width:780px){ .flow-hint{ flex-direction:column; align-items:flex-start; gap:2px; } }
+  #app .strip-card{ position:relative; }
+  #app .strip-tag{ font-size:10.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--bg); background:var(--accent); border-radius:100px; padding:2px 8px; margin-left:2px; }
+  #app .strip-tag.soft{ background:transparent; color:var(--text-soft); border:1px solid var(--sep-strong); }
+  #app .strip-card.is-next{ border:1px dashed var(--sep-strong); }
+
+  /* ---------- Inventar ---------- */
+  #app .players-grid{ grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+  #app .player-card{ padding:16px; gap:10px; }
+  #app .player-card.is-turn{ outline:2px solid var(--accent); box-shadow:var(--glow); }
+  #app .turn-badge{ flex:0 0 auto; font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--bg); background:var(--accent); border-radius:100px; padding:3px 10px; }
+  #app .player-name{ width:auto; min-width:0; flex:1 1 auto; }
+  #app .hash-num{ font-size:40px; line-height:1; }
+  #app .quick-hash{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:-2px; }
+  #app .qh-btn{ min-height:40px; border-radius:12px; border:1.5px solid var(--sep-strong); background:var(--surface-alt); color:var(--text); font-size:16px; font-weight:600; cursor:pointer; }
+  #app .qh-btn.pos{ color:var(--good); } #app .qh-btn.neg{ color:var(--bad); }
+  #app .qh-btn:hover{ background:var(--surface-alt2); }
+  #app .joint-progress{ display:flex; align-items:center; gap:10px; margin-bottom:2px; }
+  #app .jp-bar, #app .lb-bar{ flex:1; height:8px; border-radius:100px; background:var(--surface-alt2); overflow:hidden; display:block; }
+  #app .jp-bar i, #app .lb-bar i{ display:block; height:100%; border-radius:100px; background:var(--wp-gold); }
+  #app .jp-num{ font-size:14px; font-weight:600; color:var(--text-soft); min-width:32px; text-align:right; }
+
+  /* ---------- Leaderboard ---------- */
+  #app .chip-select{ display:flex; flex-wrap:nowrap; gap:4px; padding:4px; border-radius:100px; background:var(--surface-alt); width:fit-content; max-width:100%; overflow-x:auto; margin-bottom:18px; }
+  #app .chip-select button{ flex:0 0 auto; border:none; background:transparent; border-radius:100px; padding:10px 18px; font-size:15px; font-weight:600; letter-spacing:.03em; color:var(--text-soft); }
+  #app .chip-select button.on{ background:var(--surface); color:var(--text); box-shadow:0 1px 4px rgba(0,0,0,.2); }
+  .lb-rows{ display:flex; flex-direction:column; gap:6px; margin-top:6px; }
+  .lb-row{ display:grid; grid-template-columns:28px minmax(0,1.2fr) minmax(0,1fr) auto; align-items:center; gap:12px; padding:10px 14px; border-radius:14px; background:var(--surface); box-shadow:var(--shadow); }
+  .lb-rank{ font-size:15px; font-weight:700; color:var(--text-faint); text-align:center; }
+  .lb-name{ display:flex; align-items:center; gap:8px; font-size:16px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lb-val{ font-size:18px; font-weight:700; color:var(--accent); min-width:36px; text-align:right; }
+  @media (max-width:520px){ .lb-row{ grid-template-columns:24px minmax(0,1fr) auto; } .lb-row .lb-bar{ display:none; } }
+
+  /* ---------- Minispiel-Tools: Reiter ---------- */
+  #app .mg-tabs{ overflow-x:auto; flex-wrap:nowrap; margin-bottom:18px; scrollbar-width:none; }
+  #app .mg-tabs::-webkit-scrollbar{ display:none; }
+  #app .mg-tabs button{ flex:1 0 auto; padding:12px 16px; font-size:15px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }
+  #app .tab-live{ display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--accent); margin-left:4px; vertical-align:middle; }
+  #app .tab-live[hidden]{ display:none; }
+  #app .mg-group{ margin-bottom:0; }
+
+  /* ---------- Turnier ---------- */
+  .tour-row{ display:grid; grid-template-columns:28px minmax(0,1fr) auto; align-items:center; gap:10px; padding:9px 12px; margin-top:6px; border-radius:12px; background:var(--surface-alt); font-size:15px; }
+  .tour-row.done{ opacity:.6; }
+  .tour-row .tr-state{ width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; background:var(--surface-alt2); color:var(--text-soft); }
+  .tour-row.done .tr-state{ background:var(--accent); color:var(--bg); }
+  .tour-row .tr-vs{ color:var(--text-faint); margin:0 4px; font-size:13px; text-transform:uppercase; letter-spacing:.08em; }
+  .tour-row .tr-game{ font-size:13px; color:var(--text-soft); letter-spacing:.04em; }
+
+  /* ---------- Kompaktere Feld-Auswahl ---------- */
+  #app .choice-grid{ grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); gap:8px; }
+  #app .choice-btn{ min-height:52px; padding:8px 12px; font-size:16px; gap:10px; border-radius:12px; }
+  #app .choice-btn .ico{ width:32px; height:32px; border-radius:10px; }
+  #app .choice-btn .ico .ic{ width:20px; height:20px; }
+  #app #orteChoiceGrid{ grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:6px; }
+  #app #orteChoiceGrid .choice-btn{ min-height:44px; padding:6px 10px; font-size:14.5px; font-weight:500; }
+  #app #orteChoiceGrid .choice-btn .ico{ width:28px; height:28px; }
+  #app #orteChoiceGrid .choice-btn .ico .ic{ width:18px; height:18px; }
+  #app .choice-sub-label{ margin:14px 0 6px; }
+  #app .flow-question{ margin-bottom:12px; }
+  #app .flow-steps{ margin-bottom:14px; }
+  @media (max-width:780px){
+    #app .choice-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+    #app .choice-btn{ min-height:48px; padding:6px 8px; font-size:14px; gap:8px; }
+    #app .choice-btn .ico{ width:28px; height:28px; }
+    #app .choice-btn .ico .ic{ width:18px; height:18px; }
+    #app #orteChoiceGrid .choice-btn{ min-height:42px; font-size:13.5px; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    #flowPanel > .flow-steps ~ *, #app .menu-pop, #tipBubble, #app .live-chip::before{ animation:none !important; }
+  }
 </style>
 </head>
 <body>
 <div id="app">
 
   <header>
-    <div class="brand"><span id="brandLogo"></span><span>RB-Party <span class="sub">Gamepad</span></span></div>
+    <div class="brand"><span id="brandLogo"></span><span class="brand-text">RB-Party <span class="sub">Gamepad</span></span></div>
     <div class="status-strip">
-      <button class="status-chip" id="boardAutoChip" title="Automatik-Modus: Zug-Ziel automatisch über das Brett ermitteln"></button>
-      <button class="status-chip" id="undoBtn" title="Letzte Hash-Änderung rückgängig machen">↶ Rückgängig</button>
       <div class="status-chip chip-turn">
-        <span class="label">Am Zug</span>
-        <button class="mini-btn" id="turnPrev">◀</button>
-        <select id="turnSelect"></select>
-        <button class="mini-btn" id="turnNext">▶</button>
+        <span class="label">Am Zug <button type="button" class="qmark" data-tip="Wer gerade würfelt. Mit ◀ ▶ oder der Auswahl kannst du die Person manuell wechseln – ein laufender Spielzug wird dabei verworfen.">?</button></span>
+        <button class="mini-btn" id="turnPrev" aria-label="Vorherige Person">◀</button>
+        <select id="turnSelect" aria-label="Wer ist am Zug?"></select>
+        <button class="mini-btn" id="turnNext" aria-label="Nächste Person">▶</button>
       </div>
       <div class="status-chip chip-round">
-        <span class="label">Runde</span>
-        <button class="mini-btn" id="roundMinus">–</button>
+        <span class="label">Runde <button type="button" class="qmark" data-tip="Aktuelle Spielrunde. Sie zählt automatisch hoch, wenn alle dran waren. Mit – und + kannst du sie von Hand korrigieren.">?</button></span>
+        <button class="mini-btn" id="roundMinus" aria-label="Runde zurück">–</button>
         <span class="round-num" id="roundNum">1</span>
-        <button class="mini-btn" id="roundPlus">+</button>
+        <button class="mini-btn" id="roundPlus" aria-label="Runde weiter">+</button>
       </div>
-      <a class="icon-btn" id="beamerOpenBtn" href="https://claude.ai/artifact/FUR6vpg87G3E4W7Cdf6fMv" target="_blank" rel="noopener" title="Beamer-Vollbild öffnen">🖥️</a>
-      <button class="icon-btn" id="beamerLinkBtn" title="Beamer-Adresse zum manuellen Kopieren anzeigen">🔗</button>
-      <button class="icon-btn" id="beamerPreviewToggle" title="Kleines Beamer-Vorschaufenster ein-/ausblenden">📺</button>
-      <button class="icon-btn install-hint" id="installBtn" title="Als App installieren">⤓</button>
-      <button class="icon-btn" id="themeToggle" title="Hell/Dunkel">◐</button>
+      <button class="status-chip hdr-undo" id="undoBtn" title="Letzte Hash-Änderung rückgängig machen">↶ <span class="hdr-label">Rückgängig</span></button>
+      <span class="status-chip live-chip" id="beamerStatusChip" hidden></span>
+      <div class="menu-wrap">
+        <button type="button" class="hdr-btn" id="beamerMenuBtn" aria-haspopup="true" aria-expanded="false">🖥️ <span class="hdr-label">Beamer</span> <span class="menu-caret">▾</span></button>
+        <div class="menu-pop" id="beamerMenu" hidden>
+          <div class="menu-title">Beamer</div>
+          <a class="menu-item" id="beamerOpenBtn" href="https://claude.ai/artifact/FUR6vpg87G3E4W7Cdf6fMv" target="_blank" rel="noopener"><span class="mi-ico">🖥️</span><span class="mi-txt"><b>Beamer öffnen</b><small>Neues Fenster auf diesem Gerät, z. B. für den Projektor</small></span></a>
+          <button type="button" class="menu-item" id="beamerLinkBtn"><span class="mi-ico">🔗</span><span class="mi-txt"><b>Koppeln &amp; Adresse</b><small>Beamer auf einem anderen Gerät per 4-stelligem Code verbinden</small></span></button>
+          <button type="button" class="menu-item" id="beamerPreviewToggle"><span class="mi-ico">📺</span><span class="mi-txt"><b>Vorschau ein/aus</b><small>Kleines Beamer-Fenster hier im Gamepad</small></span></button>
+          <button type="button" class="menu-item" id="beamerMinigameBtn"><span class="mi-ico">🧰</span><span class="mi-txt"><b>Minispiel-Anzeige</b><small>Stoppuhr, Zähler &amp; Co. auf dem Beamer zeigen</small></span></button>
+        </div>
+      </div>
+      <div class="menu-wrap">
+        <button type="button" class="hdr-btn" id="moreMenuBtn" aria-haspopup="true" aria-expanded="false">⚙️ <span class="hdr-label">Mehr</span> <span class="menu-caret">▾</span></button>
+        <div class="menu-pop" id="moreMenu" hidden>
+          <div class="menu-title">Einstellungen</div>
+          <button type="button" class="menu-item" id="boardAutoChip" title="Automatik-Modus: Zug-Ziel automatisch über das Brett ermitteln"></button>
+          <button type="button" class="menu-item" id="themeToggle" title="Hell/Dunkel"><span class="mi-ico">◐</span><span class="mi-txt"><b>Hell / Dunkel</b><small>Darstellung umschalten</small></span></button>
+          <button type="button" class="menu-item install-hint" id="installBtn" title="Als App installieren"><span class="mi-ico">⤓</span><span class="mi-txt"><b>Als App installieren</b><small>Auf den Startbildschirm legen</small></span></button>
+          <button type="button" class="menu-item" id="helpOpenBtn"><span class="mi-ico">❔</span><span class="mi-txt"><b>Hilfe</b><small>Begriffe und Ablauf erklärt</small></span></button>
+        </div>
+      </div>
     </div>
   </header>
   <div class="info-strip">
@@ -601,12 +859,12 @@
 
   <div class="body-layout">
     <nav class="rail">
-      <button class="rail-btn active" data-view="view-flow">🎯 Spielzug</button>
-      <button class="rail-btn" data-view="view-players">📊 Inventar</button>
-      <button class="rail-btn" data-view="view-leaderboard">🏆 Leaderboard</button>
-      <button class="rail-btn" data-view="view-verlauf">📜 Verlauf</button>
-      <button class="rail-btn" data-view="view-minigames">🧰 Minispiel-Tools</button>
-      <button class="rail-btn" data-view="view-editor">🛠 Editor</button>
+      <button class="rail-btn active" data-view="view-flow"><span class="rb-ico">🎯</span><span class="rb-txt">Spielzug</span></button>
+      <button class="rail-btn" data-view="view-players"><span class="rb-ico">📊</span><span class="rb-txt">Inventar</span></button>
+      <button class="rail-btn" data-view="view-leaderboard"><span class="rb-ico">🏆</span><span class="rb-txt">Leaderboard</span></button>
+      <button class="rail-btn" data-view="view-verlauf"><span class="rb-ico">📜</span><span class="rb-txt">Verlauf</span></button>
+      <button class="rail-btn" data-view="view-minigames"><span class="rb-ico">🧰</span><span class="rb-txt"><span class="long">Minispiel-Tools</span><span class="short">Minispiele</span></span></button>
+      <button class="rail-btn" data-view="view-editor"><span class="rb-ico">🛠</span><span class="rb-txt">Editor</span></button>
     </nav>
     <main>
       <section class="view active" id="view-flow">
@@ -640,19 +898,26 @@
 
       <section class="view" id="view-minigames">
         <h2 class="section-title">MINISPIEL-TOOLS</h2>
+        <div class="segmented mg-tabs" id="mgTabs" role="tablist">
+          <button type="button" data-mgtab="stopwatch" class="active">Stoppuhr</button>
+          <button type="button" data-mgtab="counter">Zähler</button>
+          <button type="button" data-mgtab="random">Zufall</button>
+          <button type="button" data-mgtab="flag">Flaggen</button>
+          <button type="button" data-mgtab="beamer">Beamer <span class="tab-live" hidden></span></button>
+        </div>
         <p class="desc">Stoppuhren, Zähler und Zufallsgenerator zum Begleiten der Minispiele – rein lokal auf diesem Gerät, ohne Verknüpfung zur Rangliste oder zum Hash-Stand.</p>
 
-        <div class="mg-group">
+        <div class="mg-group" data-mgpane="stopwatch">
           <div class="mg-group-head"><h3>⏱ Stoppuhren</h3><button class="mg-add-btn" id="mgAddStopwatch">+</button></div>
           <div class="mg-grid" id="mgStopwatches"></div>
         </div>
 
-        <div class="mg-group">
+        <div class="mg-group" data-mgpane="counter">
           <div class="mg-group-head"><h3>🔢 Zähler</h3><button class="mg-add-btn" id="mgAddCounter">+</button></div>
           <div class="mg-grid" id="mgCounters"></div>
         </div>
 
-        <div class="mg-group">
+        <div class="mg-group" data-mgpane="random">
           <div class="mg-group-head"><h3>🎲 Zufall</h3></div>
           <div class="mg-random-card">
             <div style="font-size:12.5px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:.04em;">Münzwurf</div>
@@ -670,7 +935,7 @@
           </div>
         </div>
 
-        <div class="mg-group">
+        <div class="mg-group" data-mgpane="flag">
           <div class="mg-group-head"><h3>🏳️ Flaggenquiz</h3></div>
           <div class="mg-random-card">
             <div class="mg-flag-display" id="mgFlagEmoji">🏳️</div>
@@ -679,7 +944,7 @@
           </div>
         </div>
 
-        <div class="mg-group">
+        <div class="mg-group" data-mgpane="beamer">
           <div class="mg-group-head"><h3>📺 Beamer-Anzeige</h3></div>
           <div class="mg-beamer-toggle-row">
             <div>
@@ -706,6 +971,58 @@
         </div>
         <div id="editorContent"></div>
       </section>
+
+      <section class="view" id="view-help">
+        <h2 class="section-title">HILFE</h2>
+        <div class="help-grid">
+          <article class="help-card">
+            <h3>So läuft ein Spielzug</h3>
+            <ol class="help-steps">
+              <li><b>Würfeln</b> – virtuell oder analog (Augensumme eintragen).</li>
+              <li><b>Feld wählen</b> – Feldart oder Ort, auf dem die Figur gelandet ist.</li>
+              <li><b>Aktion</b> – Ereignis, Minispiel, Rad, Duell usw. erledigen.</li>
+              <li><b>Weiter</b> – der große Button unten gibt an die nächste Person.</li>
+            </ol>
+          </article>
+          <article class="help-card">
+            <h3>Begriffe</h3>
+            <dl>
+              <dt>Hash</dt><dd>Währung und Punktestand der Spieler:innen. Ereignisse, Räder, Shops und die Auswertung ändern ihn.</dd>
+              <dt>Orte</dt><dd>Besondere Felder wie Bunker, Dorfladen oder Schwimmbad mit eigener Funktion. Orte pflegst du im Editor.</dd>
+              <dt>Leaderboard</dt><dd>Die Tabelle aller Spieler:innen, sortierbar nach Hash und weiteren Werten.</dd>
+              <dt>Automatik</dt><dd>Das Gamepad ermittelt das Ziel des Zugs selbst über das Brett. Schaltest du es unter „Mehr“ aus, wählst du das Feld von Hand.</dd>
+              <dt>Rückgängig</dt><dd>Macht die letzte Hash-Änderung rückgängig.</dd>
+            </dl>
+          </article>
+          <article class="help-card">
+            <h3>Beamer</h3>
+            <p>Der Beamer ist die große Anzeige für alle. Alles dazu findest du im Menü <b>Beamer</b> oben rechts:</p>
+            <ul>
+              <li><b>Beamer öffnen</b> – gleiches Gerät, neues Fenster. Gamepad und Beamer müssen dann im selben Browser laufen.</li>
+              <li><b>Koppeln &amp; Adresse</b> – Beamer auf einem zweiten Gerät: Dort zeigt der Beamer einen 4-stelligen Code, den du hier eintippst. Beide Geräte brauchen Internet.</li>
+              <li><b>Vorschau</b> – kleines Beamer-Fenster direkt im Gamepad.</li>
+              <li><b>Minispiel-Anzeige</b> – ersetzt den Beamer-Bildschirm durch Stoppuhr, Zähler &amp; Co., bis du sie wieder ausschaltest.</li>
+            </ul>
+          </article>
+          <article class="help-card">
+            <h3>Räder</h3>
+            <ul>
+              <li><b>RB-City forever-Rad</b> – das gute Rad.</li>
+              <li><b>Schimmern is Scheiße-Rad</b> – das schlechte Rad.</li>
+              <li><b>Entscheidungsrad</b> – entscheidet, welches der beiden Räder in der nächsten Runde benutzt wird.</li>
+            </ul>
+          </article>
+          <article class="help-card">
+            <h3>Gut zu wissen</h3>
+            <ul>
+              <li>Spielstand sichern oder laden: Inventar → Exportieren / Importieren.</li>
+              <li>Neues Spiel und Auswertung findest du ebenfalls im Inventar.</li>
+              <li>Als App installieren: Menü „Mehr“.</li>
+              <li>Überall, wo ein <span class="qmark static">?</span> steht, erklärt ein Tipp auf das Fragezeichen kurz die Funktion.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
     </main>
 
     <aside id="beamerPreviewPanel" class="beamer-preview-panel" style="display:none;">
@@ -725,7 +1042,7 @@
   <div class="modal-backdrop" id="beamerLinkModal">
     <div class="modal-sheet">
       <h3 class="modal-title">Beamer koppeln</h3>
-      <p class="modal-sub">Beamer auf einem anderen Gerät? Öffne dort die App im Beamer-Modus (🖥️ bzw. Adresse unten + <b>?beamer=1</b>). Der Beamer zeigt oben links einen 4-stelligen Code – hier eintippen. Beide Geräte brauchen Internet.</p>
+      <p class="modal-sub">Beamer auf einem anderen Gerät? Öffne dort die App im Beamer-Modus (Adresse unten, die mit <b>?beamer=1</b> endet). Der Beamer zeigt oben links einen 4-stelligen Code – hier eintippen. Beide Geräte brauchen Internet.</p>
       <div class="link-row">
         <input type="text" id="beamerCodeInput" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="0000" autocomplete="off">
         <button class="pill-btn" id="beamerCodeConnect">Verbinden</button>
@@ -734,7 +1051,7 @@
       <div class="link-row" id="beamerCodeOffRow" style="display:none;"><button class="pill-btn subtle" id="beamerCodeOff" style="flex:1;">Trennen</button></div>
       <hr class="link-sep">
       <h3 class="modal-title" style="font-size:16px;">Beamer-Adresse (gleiches Gerät)</h3>
-      <p class="modal-sub">Falls der 🖥️-Button kein neues Tab öffnet: Adresse hier markieren, kopieren und von Hand in ein neues Tab/Fenster einfügen – das funktioniert immer, weil ihr dann selbst navigiert statt die Seite. Wichtig: Pad und Beamer müssen im selben Browser auf demselben Gerät laufen, nur dann sind sie synchron.</p>
+      <p class="modal-sub">Falls „Beamer öffnen“ kein neues Tab öffnet: Adresse hier markieren, kopieren und von Hand in ein neues Tab/Fenster einfügen – das funktioniert immer, weil ihr dann selbst navigiert statt die Seite. Wichtig: Gamepad und Beamer müssen im selben Browser auf demselben Gerät laufen, nur dann sind sie synchron.</p>
       <input type="text" id="beamerLinkInput" readonly style="width:100%; box-sizing:border-box; padding:12px 14px; border-radius:12px; border:1px solid var(--sep); background:var(--surface-alt); color:var(--text); font-family:var(--mono); font-size:13px; margin-bottom:12px;">
       <div class="modal-actions"><button class="pill-btn subtle" id="beamerLinkClose">Schließen</button><button class="pill-btn" id="beamerLinkCopy">Kopieren</button></div>
     </div>
@@ -768,6 +1085,7 @@
   <div class="modal-backdrop" id="roundEndModal">
     <div class="modal-sheet">
       <h3 class="modal-title" id="roundEndTitle">🏆 Runde beendet</h3>
+      <div class="flow-hint" id="roundEndNext"></div>
       <div class="chip-select" id="roundEndSortChips"></div>
       <div id="roundEndList"></div>
       <div class="modal-actions"><button class="pill-btn" id="roundEndClose" style="flex:1;">Weiter</button></div>
@@ -923,8 +1241,8 @@ window.addEventListener('unhandledrejection', function(e){
     {prob:5, factor:3, label:"Vervierfacht ×4", short:"×4", colorVar:"best"}
   ];
   const RAD_ENTSCHEIDUNG = [
-    {prob:50, label:"Gutes Rad", short:"Gutes Rad", colorVar:"good"},
-    {prob:50, label:"Schlechtes Rad", short:"Schlechtes Rad", colorVar:"bad"}
+    {prob:50, label:"RB-City forever-Rad", short:"RB-City forever", colorVar:"good"},
+    {prob:50, label:"Schimmern is Scheiße-Rad", short:"Schimmern is Scheiße", colorVar:"bad"}
   ];
   function weightedPick(outcomes){
     const total = outcomes.reduce((s,o)=>s+o.prob,0);
@@ -1826,7 +2144,7 @@ window.addEventListener('unhandledrejection', function(e){
     if(bm.stepsLeft<=0){ boardResolve(); return; }
     const options = boardCrossingOptions(bm);
     if(options.length<=1){ boardAutoRun(); return; } // Sicherheitsnetz: sollte durch boardAutoRun nie hier landen
-    let html = `<div class="flow-player">🎯 ${cp?teamDot(cp)+escapeHtml(cp.name):'–'} ist dran</div>
+    let html = `${flowSteps(2)}<div class="flow-player">🎯 ${cp?teamDot(cp)+escapeHtml(cp.name):'–'} ist dran</div>
       <div class="flow-question">🗺️ Automatik-Zug — noch ${bm.stepsLeft} Feld${bm.stepsLeft===1?'':'er'}</div>
       <p class="desc">Kreuzung! Wohin geht's?</p><div class="winner-pick" id="boardCrossPick">${options.map(n=>`<button data-nr="${n}">${escapeHtml(boardFieldLabel(boardField(n)))}</button>`).join('')}</div>`;
     panel.innerHTML = html;
@@ -1874,7 +2192,7 @@ window.addEventListener('unhandledrejection', function(e){
     } else { tChip.style.display='none'; }
 
     const baChip = document.getElementById('boardAutoChip');
-    baChip.textContent = state.boardAutoMode ? '🗺️ Automatik: An' : '🗺️ Automatik: Aus';
+    baChip.innerHTML = `<span class="mi-ico">🗺️</span><span class="mi-txt"><b>Automatik: ${state.boardAutoMode ? 'An' : 'Aus'}</b><small>Zug-Ziel automatisch über das Brett ermitteln</small></span>`;
     baChip.classList.toggle('active', !!state.boardAutoMode);
     baChip.onclick = ()=>{
       state.boardAutoMode = !state.boardAutoMode;
@@ -1892,8 +2210,9 @@ window.addEventListener('unhandledrejection', function(e){
 
   function renderPlayerStrip(){
     const strip = document.getElementById('playerStrip');
+    const nextIdx = nextTurnIndex();
     strip.innerHTML = state.players.map((p,idx)=>`
-      <div class="strip-card ${idx===state.turnIndex?'is-turn':''}">${teamDot(p)}<b>${escapeHtml(p.name)}</b> <span class="strip-hash">${p.hash}</span></div>
+      <div class="strip-card ${idx===state.turnIndex?'is-turn':''} ${idx===nextIdx?'is-next':''}">${teamDot(p)}<b>${escapeHtml(p.name)}</b> <span class="strip-hash">${p.hash}</span>${idx===state.turnIndex?'<span class="strip-tag">Am Zug</span>':(idx===nextIdx?'<span class="strip-tag soft">Danach</span>':'')}</div>
     `).join('');
   }
 
@@ -1903,24 +2222,30 @@ window.addEventListener('unhandledrejection', function(e){
     const invHtml = p.inventory.length ? p.inventory.map((item,idx)=>`<span class="inv-chip" data-idx="${idx}">${escapeHtml(item)} ✕</span>`).join('') : `<span class="inv-empty">Kein Inventar</span>`;
     const jointChips = JOINT_KEYS.map(j=>`<button class="joint-chip ${p.joint[j.k]?'on':''}" data-jk="${j.k}">${j.label}</button>`).join('');
     const jointDone = JOINT_KEYS.every(j=>p.joint[j.k]) && p.hash>=100;
+    const isTurn = state.players[state.turnIndex] === p;
+    const jointCount = JOINT_KEYS.filter(j=>p.joint[j.k]).length;
+    if(isTurn) card.classList.add('is-turn');
     card.innerHTML = `
       <div class="player-top">
         <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
           <button class="color-dot-btn" title="Farbe wählen" style="width:15px; height:15px; border-radius:50%; background:${p.color||'var(--surface-alt)'}; border:1.5px solid var(--sep); flex-shrink:0; padding:0; cursor:pointer;"></button>
           <input class="player-name" value="${escapeAttr(p.name)}" maxlength="18">
+          ${isTurn ? '<span class="turn-badge">Am Zug</span>' : ''}
         </div>
         ${state.gameStarted ? '' : '<button class="player-remove">✕</button>'}
       </div>
       ${p.colorPickerOpen ? `<div class="color-picker-row" style="display:flex; gap:5px; flex-wrap:wrap; margin:2px 0 10px;">${TEAM_COLORS.map(c=>`<button class="color-swatch-pick" data-c="${c}" style="width:22px; height:22px; border-radius:50%; background:${c}; border:${p.color===c?'2.5px solid var(--text)':'2px solid transparent'}; opacity:${p.color===c?'1':'0.45'}; padding:0; cursor:pointer;"></button>`).join('')}</div>` : ''}
-      <div class="stat-row"><span class="stat-label">HASH</span><div class="hash-row">
+      <div class="stat-row"><span class="stat-label">HASH <button type="button" class="qmark" data-tip="Hash ist Währung und Punktestand. Tippe auf den Wert, um ihn direkt zu ändern, oder nutze die Schnell-Buttons.">?</button></span><div class="hash-row">
         <input class="hash-num" value="${p.hash}" inputmode="numeric">
       </div></div>
+      <div class="quick-hash" role="group" aria-label="Hash schnell ändern">${[-10,-5,5,10].map(d=>`<button type="button" class="qh-btn ${d<0?'neg':'pos'}" data-d="${d}">${d>0?'+':'−'}${Math.abs(d)}</button>`).join('')}</div>
       ${(state.boardAutoMode && state.board) ? `<div class="swap-note" style="margin-top:-4px;">📍 ${escapeHtml(boardFieldLabel(boardField(p.fieldNr)))} (Feld ${p.fieldNr})</div>` : ''}
       ${p.skipNextTurn ? `<div class="final-badge">⏭ Setzt nächste Runde aus</div>` : ''}
       ${p.jointsBuilt>0 ? `<div class="final-badge">🎉 ${p.jointsBuilt}× Joint gebaut</div>` : ''}
-      <div><span class="stat-label">INVENTAR</span><div class="inv-chips" style="margin-top:6px;">${invHtml}</div></div>
+      <div><span class="stat-label">ITEMS <button type="button" class="qmark" data-tip="Gegenstände dieser Person. Tippe auf ein Item, um es zu entfernen.">?</button></span><div class="inv-chips" style="margin-top:6px;">${invHtml}</div></div>
       <div>
-        <button class="joint-toggle">Joint-Fortschritt ${p.jointOpen?'▾':'▸'}</button>
+        <div class="joint-progress" aria-hidden="true"><span class="jp-bar"><i style="width:${Math.round(100*jointCount/Math.max(1,JOINT_KEYS.length))}%"></i></span><span class="jp-num">${jointCount}/${JOINT_KEYS.length}</span></div>
+        <button class="joint-toggle">Joint-Fortschritt bearbeiten ${p.jointOpen?'▾':'▸'}</button>
         ${p.jointOpen ? `<div class="joint-grid">${jointChips}</div><div style="margin-top:6px;">${jointDone?`<span class="final-badge">🎉 Bereit! Geh zum Rauchspot: ${escapeHtml((getCurrentRauchspot()||{}).name||'–')}</span>`:`<span class="inv-empty">Hash ≥ 100: ${p.hash>=100?'✓':'✕'}</span>`}</div>` : ''}
       </div>
     `;
@@ -1929,6 +2254,13 @@ window.addEventListener('unhandledrejection', function(e){
     if(rm) rm.addEventListener('click', ()=>{ state.players=state.players.filter(x=>x.id!==p.id); state.turnIndex=Math.min(state.turnIndex, Math.max(0,state.players.length-1)); renderAll(); scheduleSave(); });
     card.querySelector('.color-dot-btn').addEventListener('click', ()=>{ p.colorPickerOpen = !p.colorPickerOpen; renderPlayersGrid(); });
     card.querySelectorAll('.color-swatch-pick').forEach(btn=>{ btn.addEventListener('click', ()=>{ p.color = btn.dataset.c; p.colorPickerOpen = false; renderPlayersGrid(); renderPlayerStrip(); scheduleSave(); }); });
+    card.querySelectorAll('.qh-btn').forEach(btn=>{ btn.addEventListener('click', ()=>{
+      const d = parseInt(btn.dataset.d,10); const before = p.hash; const after = Math.max(0, before + d);
+      if(after===before) return;
+      pushUndo(); p.hash = after;
+      logEvent(p, (after-before>=0?'+':'')+(after-before)+' Hash (manuell im Inventar geändert)');
+      renderPlayersGrid(); renderPlayerStrip(); renderLeaderboard(); scheduleSave();
+    }); });
     card.querySelector('.hash-num').addEventListener('change', e=>{
       const v=parseInt(e.target.value,10);
       if(!isNaN(v) && v!==p.hash){
@@ -1936,7 +2268,7 @@ window.addEventListener('unhandledrejection', function(e){
         const before=p.hash; p.hash=Math.max(0,v);
         logEvent(p, (p.hash-before>=0?'+':'')+(p.hash-before)+' Hash (manuell im Inventar geändert)');
       }
-      renderPlayersGrid(); renderPlayerStrip(); scheduleSave();
+      renderPlayersGrid(); renderPlayerStrip(); renderLeaderboard(); scheduleSave();
     });
     card.querySelectorAll('.inv-chip').forEach(chip=>{ chip.addEventListener('click', ()=>{ p.inventory.splice(parseInt(chip.dataset.idx,10),1); renderPlayersGrid(); scheduleSave(); }); });
     card.querySelector('.joint-toggle').addEventListener('click', ()=>{ p.jointOpen=!p.jointOpen; renderPlayersGrid(); });
@@ -1989,10 +2321,12 @@ window.addEventListener('unhandledrejection', function(e){
     }
     // Plätze ab 4: nebeneinander, treppenartig abgestuft
     const restItems = sorted.slice(3);
-    const restHtml = restItems.length ? `<div class="pad-steps">${restItems.map((p,i)=>`<div class="pad-step" style="--k:${i};">
-        <div class="pad-step-rank">#${i+4}</div>
-        <div class="pad-step-name">${teamDot(p,10)}${escapeHtml(p.name)}</div>
-        <div class="pad-step-val">${dispOf(p)}</div>
+    const maxVal = Math.max(1, ...sorted.map(p=>sortDef.get(p)||0));
+    const restHtml = restItems.length ? `<div class="lb-rows">${restItems.map((p,i)=>`<div class="lb-row">
+        <span class="lb-rank">${i+4}</span>
+        <span class="lb-name">${teamDot(p,10)}${escapeHtml(p.name)}</span>
+        <span class="lb-bar"><i style="width:${Math.max(3,Math.round(100*(sortDef.get(p)||0)/maxVal))}%"></i></span>
+        <span class="lb-val">${dispOf(p)}</span>
       </div>`).join('')}</div>` : '';
     return (podium + restHtml) || '<p class="desc">Keine Spieler:innen vorhanden.</p>';
   }
@@ -2001,7 +2335,7 @@ window.addEventListener('unhandledrejection', function(e){
     const chipWrap = document.getElementById('lbSortChips'); if(!chipWrap) return;
     chipWrap.innerHTML = '';
     LB_SORTS.forEach(s=>{
-      const b=document.createElement('button'); b.textContent='Nach '+s.label; b.className = lbSort===s.id?'on':'';
+      const b=document.createElement('button'); b.textContent=s.label; b.className = lbSort===s.id?'on':'';
       b.addEventListener('click', ()=>{ lbSort=s.id; renderLeaderboard(); });
       chipWrap.appendChild(b);
     });
@@ -2046,6 +2380,11 @@ window.addEventListener('unhandledrejection', function(e){
     document.getElementById('roundEndTitle').textContent = `🏆 Runde ${endedRound} beendet`;
     roundEndSort = 'hash';
     roundEndRoundNum = endedRound;
+    const starter = state.players[state.turnIndex];
+    const nextEl = document.getElementById('roundEndNext');
+    if(nextEl) nextEl.innerHTML = `<span class="fh-tag">Als Nächstes</span><span class="fh-txt">Runde ${state.round} beginnt${starter ? ' mit <b>'+escapeHtml(starter.name)+'</b>' : ''}. Tippe unten auf „Weiter“.</span>`;
+    const closeBtn = document.getElementById('roundEndClose');
+    if(closeBtn) closeBtn.textContent = `Weiter mit Runde ${state.round} →`;
     renderRoundEndList();
     document.getElementById('roundEndModal').classList.add('open');
   }
@@ -2053,7 +2392,7 @@ window.addEventListener('unhandledrejection', function(e){
     const chipWrap = document.getElementById('roundEndSortChips');
     chipWrap.innerHTML = '';
     LB_SORTS.forEach(s=>{
-      const b=document.createElement('button'); b.textContent='Nach '+s.label; b.className = roundEndSort===s.id?'on':'';
+      const b=document.createElement('button'); b.textContent=s.label; b.className = roundEndSort===s.id?'on':'';
       b.addEventListener('click', ()=>{ roundEndSort=s.id; renderRoundEndList(); });
       chipWrap.appendChild(b);
     });
@@ -2629,20 +2968,45 @@ window.addEventListener('unhandledrejection', function(e){
   let bembelPartnerId = null;
   let bembelStage = null;
 
+  // Schrittanzeige im Spielzug: 1 Würfeln, 2 Feld, 3 Aktion, 4 Weiter
+  // Wer ist nach dem aktuellen Zug dran? (gleiche Logik wie goToNextTurn: Aussetzer werden übersprungen)
+  function nextTurnIndex(){
+    const n = state.players.length; if(n<2) return -1;
+    const dir = state.turnDirection || 1;
+    let idx = state.turnIndex;
+    for(let i=0;i<n;i++){
+      idx = ((idx + dir) % n + n) % n;
+      if(idx===state.turnIndex) break;
+      const p = state.players[idx];
+      if(!(p && p.skipNextTurn)) return idx;
+    }
+    return ((state.turnIndex + dir) % n + n) % n;
+  }
+  function flowSteps(active){
+    const labels = ['Würfeln','Feld','Aktion','Weiter'];
+    const ni = nextTurnIndex(); const np = ni>=0 ? state.players[ni] : null;
+    const hints = {
+      1: 'Würfeln – danach unten auf „Weiter zur Feldwahl“.',
+      2: 'Tippe das Feld, auf dem die Figur gelandet ist.',
+      3: 'Aktion erledigen – danach unten auf „Nächste Person“.' + (np ? ' Als Nächstes dran: <b>'+escapeHtml(np.name)+'</b>.' : '')
+    };
+    return `<ol class="flow-steps" aria-label="Schritt ${active} von 4">${labels.map((l,i)=>`<li class="${i+1<active?'done':(i+1===active?'current':'')}"><span class="fs-dot">${i+1<active?'✓':i+1}</span><span class="fs-lbl">${l}</span></li>`).join('')}</ol>
+      <div class="flow-hint"><span class="fh-tag">Als Nächstes</span><span class="fh-txt">${hints[active]||''}</span></div>`;
+  }
   const FIELD_CHOICES = [
     {id:'ereignis', label:'Ereignis', ico:'❓'},
     {id:'minispiel', label:'Minispiel', ico:'🎲'},
     {id:'gluecksrad', label:'Glücksrad', ico:'🎡'},
     {id:'duell', label:'Duellfeld', ico:'⚔️'},
-    {id:'herausforderung', label:'Herausforderungsfeld', ico:'🗡️'},
+    {id:'herausforderung', label:'Herausforderung', ico:'🗡️'},
     {id:'polizei', label:'Polizeikontrolle', ico:'🚓'}
   ];
   const GLUECK_OPTIONS = [
-    {id:'gut_dir', label:'RB-City Rad (für dich)', ico:'🎡'},
-    {id:'schlecht_dir', label:'Schlechtes Rad (für dich)', ico:'💀'},
+    {id:'gut_dir', label:'RB-City forever-Rad (für dich)', ico:'🎡'},
+    {id:'schlecht_dir', label:'Schimmern is Scheiße-Rad (für dich)', ico:'💀'},
     {id:'entscheidung', label:'Entscheidungsrad (Gut oder Schlecht?)', ico:'❔'},
-    {id:'gut_alle', label:'Gutes Rad (für alle)', ico:'🎡'},
-    {id:'schlecht_alle', label:'Schlechtes Rad (für alle)', ico:'💀'}
+    {id:'gut_alle', label:'RB-City forever-Rad (für alle)', ico:'🎡'},
+    {id:'schlecht_alle', label:'Schimmern is Scheiße-Rad (für alle)', ico:'💀'}
   ];
   let glueckSubChoice = null;
 
@@ -2727,6 +3091,7 @@ window.addEventListener('unhandledrejection', function(e){
     const hasKraeuter = cp.inventory.includes('Kräuterwasser');
     const invHtml = cp.inventory.length ? cp.inventory.map(item=>`<span class="inv-chip">${escapeHtml(item)}</span>`).join('') : `<span class="inv-empty">Kein Inventar</span>`;
     panel.innerHTML = `
+      ${flowSteps(1)}
       <div class="flow-player">🎯 ${teamDot(cp)}${escapeHtml(cp.name)} ist dran</div>
       <div class="flow-question">Erst würfeln, um zu sehen wie weit du kommst.</div>
       ${(showKinderJoyBtn||showWoerstBtn) ? `<div class="flow-items">
@@ -2861,6 +3226,7 @@ window.addEventListener('unhandledrejection', function(e){
       renderFlowAsk(panel); return;
     }
     panel.innerHTML = `
+      ${flowSteps(3)}
       <button class="pill-btn ghost flow-back-btn">← Andere Feldart wählen</button>
       <div id="flowInner"></div>
       <div class="flow-next-wrap"><button class="pill-btn flow-next-btn">Weiter →</button></div>
@@ -2871,7 +3237,7 @@ window.addEventListener('unhandledrejection', function(e){
     const isAgain = flowChoice==='ereignis' && currentCard && currentCard.special==='again';
     const nextBtn = panel.querySelector('.flow-next-btn');
     if(isAgain) nextBtn.textContent = 'Nochmal würfeln ↻';
-    else nextBtn.textContent = 'Weiter zur nächsten Person →';
+    else nextBtn.textContent = 'Nächste Person →';
     panel.querySelector('.flow-next-btn').addEventListener('click', ()=>{
       const isAgain = flowChoice==='ereignis' && currentCard && currentCard.special==='again';
       if(isAgain){
@@ -2917,10 +3283,10 @@ window.addEventListener('unhandledrejection', function(e){
     });
     const inner = document.getElementById('glueckInner');
     if(glueckSubChoice==='gut_dir'){ renderWheelSpin(inner, {radType:'gut', targets:[currentPlayer()].filter(Boolean), minStake:1, title:'RB-City forever-Rad'}); }
-    else if(glueckSubChoice==='schlecht_dir'){ renderWheelSpin(inner, {radType:'schlecht', targets:[currentPlayer()].filter(Boolean), minStake:1, title:'Schimmern is scheiße-Rad'}); }
+    else if(glueckSubChoice==='schlecht_dir'){ renderWheelSpin(inner, {radType:'schlecht', targets:[currentPlayer()].filter(Boolean), minStake:1, title:'Schimmern is Scheiße-Rad'}); }
     else if(glueckSubChoice==='entscheidung'){ renderRadEntscheidung(inner); }
     else if(glueckSubChoice==='gut_alle'){ renderWheelSpinSequential(inner, {radType:'gut', title:'RB-City forever-Rad (alle, nacheinander)'}); }
-    else if(glueckSubChoice==='schlecht_alle'){ renderWheelSpinSequential(inner, {radType:'schlecht', title:'Schimmern is scheiße-Rad (alle, nacheinander)'}); }
+    else if(glueckSubChoice==='schlecht_alle'){ renderWheelSpinSequential(inner, {radType:'schlecht', title:'Schimmern is Scheiße-Rad (alle, nacheinander)'}); }
   }
 
   function renderRadEntscheidung(panel){
@@ -2950,6 +3316,7 @@ window.addEventListener('unhandledrejection', function(e){
   function renderFlowAsk(panel){
     const cp = currentPlayer();
     panel.innerHTML = `
+      ${flowSteps(2)}
       <div class="flow-player">🎯 ${cp?teamDot(cp)+escapeHtml(cp.name):'–'} ist dran</div>
       <div class="flow-question">Auf welchem Feld bist du gelandet?</div>
       <div class="choice-grid" id="fieldChoiceGrid"></div>
@@ -3892,7 +4259,7 @@ window.addEventListener('unhandledrejection', function(e){
     if(linkedShop && !ort.isBunker && linkedShop.name!=='Waldfest'){ renderShopMiniPanel(sw, linkedShop); }
     if(ort.isBunker){ renderBunkerPanel(sw); }
     if(linkedShop && linkedShop.name==='Waldfest' && cp){ renderFrediOffer(sw, cp, ortChargedAmounts[visitKey]||0); }
-    if(ort.wheel){ renderWheelSpin(sw, {radType:ort.wheel, targets:[cp].filter(Boolean), minStake:ort.wheelMin||1, title: ort.wheel==='gut'?'RB-City forever-Rad':'Schimmern is scheiße-Rad'}); }
+    if(ort.wheel){ renderWheelSpin(sw, {radType:ort.wheel, targets:[cp].filter(Boolean), minStake:ort.wheelMin||1, title: ort.wheel==='gut'?'RB-City forever-Rad':'Schimmern is Scheiße-Rad'}); }
     if(ort.schwimmbad){ renderSchwimmbad(sw); }
     if(ort.dorfplatz){ renderDorfplatz(sw, ort); }
   }
@@ -4407,8 +4774,8 @@ window.addEventListener('unhandledrejection', function(e){
           <label style="font-size:11px; font-weight:700; color:var(--text-faint);">Glücksrad
             <select class="plain mech-wheel" style="width:100%; margin-top:3px;">
               <option value="" ${!o.wheel?'selected':''}>— keins —</option>
-              <option value="gut" ${o.wheel==='gut'?'selected':''}>Gutes Rad</option>
-              <option value="schlecht" ${o.wheel==='schlecht'?'selected':''}>Schlechtes Rad</option>
+              <option value="gut" ${o.wheel==='gut'?'selected':''}>RB-City forever-Rad</option>
+              <option value="schlecht" ${o.wheel==='schlecht'?'selected':''}>Schimmern is Scheiße-Rad</option>
             </select>
           </label>
           ${o.wheel ? `<label style="font-size:11px; font-weight:700; color:var(--text-faint);">Mindesteinsatz
@@ -4820,6 +5187,9 @@ window.addEventListener('unhandledrejection', function(e){
         const A = playerById(m.a), B = playerById(m.b), g = tourGame(m.gameId);
         const isCur = t.stage==='round' && i===t.cur;
         const nm = (pl,id)=> `${teamDot(pl,10)}${m.winner===id?'<b>':''}${escapeHtml(pl?pl.name:'–')}${m.winner===id?' ✓</b>':''}`;
+        if(!isCur){
+          return `<div class="tour-row ${m.winner?'done':'todo'}"><span class="tr-state">${m.winner?'✓':(i+1)}</span><span class="tr-names">${nm(A,m.a)} <span class="tr-vs">vs</span> ${nm(B,m.b)}</span><span class="tr-game">${escapeHtml(g.name)}</span></div>`;
+        }
         return `<div class="result-banner" style="text-align:left; margin-top:8px; ${isCur?'outline:2px solid var(--accent);':(m.winner?'opacity:0.65;':'')}">
           <div style="font-size:12px; font-weight:700; color:var(--text-faint); text-transform:uppercase;">${escapeHtml(tourMatchLabel(m))} · ${escapeHtml(g.name)}</div>
           <div style="font-size:16px; margin:6px 0;">${nm(A,m.a)} <span style="color:var(--text-faint);">vs</span> ${nm(B,m.b)}</div>
@@ -4834,7 +5204,6 @@ window.addEventListener('unhandledrejection', function(e){
       const g = tourGame(t.mega.gameId);
       html = `<div class="result-banner"><div class="big">${escapeHtml(g.name)}</div><div class="sub">${escapeHtml(g.desc)}</div></div>
         <h4 style="margin:16px 0 8px; font-size:14px; font-weight:800; color:var(--text-soft);">Platzierung eintragen – tippe der Reihe nach 1., 2., 3. …</h4>
-        <p class="desc" style="margin:0 0 8px;">Als Nächstes: <b>Platz ${t.mega.order.length+1}</b></p>
         <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">${t.ids.filter(id=>!t.mega.order.includes(id)).map(id=>{ const pl=playerById(id); return `<button class="pill-btn ghost" data-tour="pick" data-id="${id}">${teamDot(pl)}${escapeHtml(pl?pl.name:'')}</button>`; }).join('')}</div>
         ${t.mega.order.length ? t.mega.order.map((id,i)=>{ const pl=playerById(id); return `<div class="swap-note">#${i+1} ${teamDot(pl)}<b>${escapeHtml(pl?pl.name:'')}</b></div>`; }).join('') : ''}`;
     } else if(t.stage==='final'){
@@ -4849,7 +5218,16 @@ window.addEventListener('unhandledrejection', function(e){
         <h4 style="margin:16px 0 8px; font-size:14px; font-weight:800; color:var(--text-soft);">Gesamtstand nach Hash</h4>${buildLeaderboardListHtml('hash')}
         <button class="pill-btn" data-tour="close" style="width:100%; margin-top:6px;">Turnier abschließen (Regen aus)</button>`;
     }
-    body.innerHTML = html + undoBtn;
+    // Hinweis „Als Nächstes“ je nach Phase
+    let nextTxt = '';
+    if(t.stage==='intro') nextTxt = t.format==='1v1' ? 'Tippe unten auf „Paarungen &amp; Spiele auslosen“.' : 'Tippe unten auf „Spiel auslosen“ – alle spielen dann dasselbe Spiel.';
+    else if(t.stage==='round') nextTxt = `Match ${Math.min(t.cur+1,t.matches.length)} von ${t.matches.length}: Spielt „${escapeHtml(tourGame((t.matches[t.cur]||{}).gameId).name)}“ und tippe danach, wer gewonnen hat.`;
+    else if(t.stage==='roundDone') nextTxt = 'Alle Matches sind durch. Tippe unten auf „Nächste Runde auslosen“.';
+    else if(t.stage==='megaRank') nextTxt = `Tippe die Person an, die <b>Platz ${t.mega.order.length+1}</b> belegt hat.`;
+    else if(t.stage==='final') nextTxt = 'Tippe unten auf „Hash vergeben“. Danach siehst du den Endstand.';
+    else if(t.stage==='done') nextTxt = 'Tippe unten auf „Turnier abschließen“, damit der Regen auf dem Beamer aufhört.';
+    const hintHtml = nextTxt ? `<div class="flow-hint"><span class="fh-tag">Als Nächstes</span><span class="fh-txt">${nextTxt}</span></div>` : '';
+    body.innerHTML = hintHtml + html + undoBtn;
     body.querySelectorAll('[data-tour]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const act = btn.dataset.tour;
@@ -9536,5 +9914,248 @@ function waldfestSceneMarkup(){
   document.addEventListener('pointerdown', function once(){ getLock(); document.removeEventListener('pointerdown', once); }, {once:true});
 })();
 </script>
-</body>
+<script>
+// ================= GAMEPAD-REDESIGN: Symbole, Menüs, Hinweise, Beamer-Status =================
+(function(){
+  var app = document.getElementById('app');
+  if(!app) return; // Beamer-Modus ersetzt den Body – dann nichts tun
+
+  // ---------- Selbstgezeichnetes Symbol-Set (24×24, Linienstil) ----------
+  var F = ' fill="currentColor" stroke="none"';
+  var ICONS = {
+    target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6"'+F+'/>',
+    box:'<path d="M4 8l8-4 8 4v9l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v9"/>',
+    bars:'<path d="M5 20V11M12 20V5M19 20v-7M3 20h18"/>',
+    trophy:'<path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M12 14v4M8 21h8M9 18h6"/>',
+    list:'<path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z"/><path d="M9 9h7M9 13h7M9 17h4"/>',
+    toolbox:'<rect x="3" y="8" width="18" height="12" rx="2"/><path d="M9 8V6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18M11 13v2h2v-2"/>',
+    wrench:'<path d="M15 4a4.5 4.5 0 0 0-4 6.2L4 17.2 6.8 20l7-7A4.5 4.5 0 0 0 20 9l-3 3-2.5-.5L14 9l3-3z"/>',
+    gear:'<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',
+    screen:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+    tv:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 3l4 4 4-4"/>',
+    link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.7l1-1"/>',
+    theme:'<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z"'+F+'/>',
+    download:'<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
+    save:'<path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/>',
+    undo:'<path d="M9 6L4 11l5 5"/><path d="M4 11h10a5 5 0 0 1 0 10h-3"/>',
+    refresh:'<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/>',
+    x:'<path d="M6 6l12 12M18 6L6 18"/>',
+    check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    right:'<path d="M4 12h15M13 6l6 6-6 6"/>',
+    left:'<path d="M20 12H5M11 6l-6 6 6 6"/>',
+    play:'<path d="M9 6l7 6-7 6z"'+F+'/>',
+    down:'<path d="M6 9l6 7 6-7z"'+F+'/>',
+    prev:'<path d="M15 6l-7 6 7 6z"'+F+'/>',
+    skip:'<path d="M5 6l9 6-9 6zM16 6h3v12h-3z"'+F+'/>',
+    swap:'<path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/>',
+    question:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.6 2.6 0 1 1 3.6 2.4c-.8.4-1.1.9-1.1 1.6M12 17v.1"/>',
+    dice:'<rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="9" cy="9" r="1.3"'+F+'/><circle cx="15" cy="9" r="1.3"'+F+'/><circle cx="9" cy="15" r="1.3"'+F+'/><circle cx="15" cy="15" r="1.3"'+F+'/>',
+    dice2:'<rect x="2.5" y="9" width="10.5" height="10.5" rx="2.5"/><rect x="11" y="3.5" width="10.5" height="10.5" rx="2.5"/><circle cx="6" cy="12.5" r="1"'+F+'/><circle cx="9.5" cy="16" r="1"'+F+'/><circle cx="14.5" cy="7" r="1"'+F+'/><circle cx="18" cy="10.5" r="1"'+F+'/>',
+    wheel:'<circle cx="12" cy="11" r="8"/><circle cx="12" cy="11" r="1.6"/><path d="M12 3v16M4 11h16M6.3 5.3l11.4 11.4M17.7 5.3L6.3 16.7M8 21l4-2 4 2"/>',
+    swords:'<path d="M4 4l13 13M20 4L7 17M14 20l6-6M10 20l-6-6"/>',
+    dagger:'<path d="M20 4l-1 5-8 8-4-4 8-8z"/><path d="M9 15l-5 5M7 13l4 4"/>',
+    police:'<path d="M3 17v-5l2.5-5h13L21 12v5z"/><path d="M3 12h18M10 4h4M12 4v3"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/>',
+    car:'<path d="M3 17v-5l2.5-5h13L21 12v5z"/><path d="M3 12h18"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/>',
+    slot:'<rect x="3" y="5" width="15" height="14" rx="3"/><path d="M8.5 5v14M13.5 5v14M21 8v5"/><circle cx="21" cy="7" r="1.3"'+F+'/>',
+    meat:'<path d="M6 8c2-4 9-4 12 0 2 3 0 9-5 10-4 1-9-1-8-5 0-2 0-3 1-5z"/><circle cx="14" cy="11" r="2"/>',
+    coin:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/><path d="M12 9v6"/>',
+    coins:'<ellipse cx="12" cy="7" rx="7" ry="3"/><path d="M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/>',
+    shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+    flag:'<path d="M5 21V4M5 5h13l-3 4 3 4H5"/>',
+    rain:'<path d="M7 15a4.5 4.5 0 0 1-.5-9 6 6 0 0 1 11.3 1.5A3.7 3.7 0 0 1 17 15z"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/>',
+    swim:'<circle cx="16" cy="6" r="2"/><path d="M4 12l5-3 4 3 3-2M3 17c2 0 2-1.5 4.5-1.5S10 17 12 17s2.5-1.5 4.5-1.5S19 17 21 17M3 21c2 0 2-1.5 4.5-1.5S10 21 12 21s2.5-1.5 4.5-1.5S19 21 21 21"/>',
+    candle:'<path d="M9 10h6v11H9z"/><path d="M12 3c2 2 2 4 0 5-2-1-2-3 0-5z"/>',
+    cart:'<path d="M3 4h3l2.5 11h9.5l2-8H7"/><circle cx="10" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/>',
+    candy:'<rect x="7" y="8" width="10" height="8" rx="4"/><path d="M7 12L3 9v6zM17 12l4-3v6z"/>',
+    beer:'<path d="M6 8h10v12H6z"/><path d="M16 11h2a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M9 12v5M13 12v5M6 8c0-2 2-3 3-2 1-2 4-2 5 0 1-1 2 0 2 2"/>',
+    sausage:'<rect x="3" y="9" width="18" height="6" rx="3" transform="rotate(-35 12 12)"/><path d="M8 13l2-2 2 2 2-2"/>',
+    sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+    bread:'<path d="M5 10a4 4 0 0 1 3-6h8a4 4 0 0 1 3 6v9H5z"/>',
+    map:'<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
+    ufo:'<ellipse cx="12" cy="14" rx="9" ry="3.5"/><path d="M7 12.5C7 8 17 8 17 12.5M8 18l-2 3M16 18l2 3M12 17.5V21"/>',
+    leaf:'<path d="M5 19c0-9 5-14 15-14 0 10-5 15-14 15"/><path d="M5 19l8-8"/>',
+    snow:'<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9 4.5l3 2 3-2M9 19.5l3-2 3 2"/>',
+    stopwatch:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9.5 3h5M12 3v2"/>',
+    hash:'<path d="M9 4L7 20M17 4l-2 16M4 9h17M3 15h17"/>',
+    crown:'<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/>',
+    party:'<path d="M4 20l5-14 9 9z"/><path d="M14 4v2M19 8h2M17 3l1 1M20 12l1.5-.5"/>',
+    warning:'<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.1"/>',
+    wind:'<path d="M3 9h11a3 3 0 1 0-3-3M3 14h15a3 3 0 1 1-3 3M3 19h7"/>',
+    bolt:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    pin:'<path d="M12 21s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>',
+    clover:'<circle cx="9" cy="8" r="3.2"/><circle cx="15" cy="8" r="3.2"/><circle cx="9" cy="14" r="3.2"/><circle cx="15" cy="14" r="3.2"/><path d="M12 14l1 7"/>',
+    finish:'<path d="M5 21V4M5 5h14v9H5"/><path d="M10 5v9M15 5v9M5 9.5h14"/>',
+    user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-5 4-7 8-7s8 2 8 7"/>',
+    puzzle:'<path d="M5 8h4a2 2 0 1 1 4 0h4v4a2 2 0 1 0 0 4v4H5v-4a2 2 0 1 0 0-4z"/>',
+    lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    unlock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/>',
+    gift:'<rect x="4" y="10" width="16" height="10" rx="1.5"/><path d="M3 7h18v3H3zM12 7v13M12 7c-1-4-6-4-5 0M12 7c1-4 6-4 5 0"/>',
+    shuffle:'<path d="M3 7h4c4 0 6 10 10 10h4M3 17h4c1.5 0 2.7-1.2 3.7-2.6M13 9c1-1.3 2.2-2 4-2h4M18 4l3 3-3 3M18 14l3 3-3 3"/>',
+    soccer:'<circle cx="12" cy="12" r="9"/><path d="M12 8l3.5 2.5-1.3 4h-4.4l-1.3-4zM12 8V3M15.5 10.5L20 9M14.2 14.5l2.8 3.8M9.8 14.5L7 18.3M8.5 10.5L4 9"/>',
+    temple:'<path d="M3 9l9-5 9 5zM5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/>',
+    church:'<path d="M12 2v4M10 4h4M8 21V12l4-4 4 4v9z"/><path d="M4 21v-6l4-3M20 21v-6l-4-3M12 21v-4"/>',
+    factory:'<path d="M3 21V10l6 3V10l6 3V6h4v15z"/>',
+    hut:'<path d="M3 12l9-8 9 8M6 11v10h12V11M10 21v-5h4v5"/>',
+    wine:'<path d="M7 3h10l-1 7a4 4 0 0 1-8 0zM12 14v7M8 21h8"/>',
+    storm:'<path d="M7 14a4.5 4.5 0 0 1-.5-9 6 6 0 0 1 11.3 1.5A3.7 3.7 0 0 1 17 14"/><path d="M12 10l-3 5h4l-2 5"/>',
+    skull:'<path d="M5 11a7 7 0 0 1 14 0c0 2-1 3-2 4v4H7v-4c-1-1-2-2-2-4z"/><circle cx="9.3" cy="11" r="1.5"'+F+'/><circle cx="14.7" cy="11" r="1.5"'+F+'/><path d="M10 19v-2M14 19v-2"/>',
+    horn:'<path d="M3 9v6h4l9 4V5L7 9z"/><path d="M19 9a4 4 0 0 1 0 6"/>',
+    letters:'<path d="M3 18L8 6l5 12M5 14h6M15 18v-8a2 2 0 0 1 4 0v8M15 14h4"/>',
+    cigarette:'<path d="M3 15h13v4H3z"/><path d="M19 15v4M22 15v4M17 9c0-2 3-2 3-4"/>',
+    gamepad:'<rect x="3" y="7" width="18" height="11" rx="5"/><path d="M8 10v5M5.5 12.5h5"/><circle cx="15.5" cy="11.5" r="1"'+F+'/><circle cx="18" cy="13.5" r="1"'+F+'/>',
+    medal:'<circle cx="12" cy="15" r="5.5"/><path d="M8.5 3l3.5 7M15.5 3L12 10"/>',
+    ring:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>',
+    square:'<rect x="5" y="5" width="14" height="14" rx="2.5"'+F+'/>'
+  };
+  var MAP = {
+    '🎯':'target','📊':'box','📦':'box','🏆':'trophy','📜':'list','🧰':'toolbox','🛠':'wrench','⚙':'gear',
+    '🖥':'screen','📺':'tv','🔗':'link','◐':'theme','⤓':'download','📥':'download','💾':'save','↶':'undo','↩':'undo',
+    '🔄':'refresh','↻':'refresh','✕':'x','✓':'check','→':'right','←':'left','▶':'play','▸':'play','▾':'down','◀':'prev','⏭':'skip',
+    '↔':'swap','❓':'question','❔':'question','🎲':'dice','⚄':'dice','🎲🎲':'dice2','🎡':'wheel','⚔':'swords','🗡':'dagger',
+    '🚓':'police','🚕':'car','🎰':'slot','🥩':'meat','🪙':'coin','💰':'coins','🛡':'shield','🏳':'flag','🌧':'rain','🏊':'swim',
+    '🕯':'candle','🛒':'cart','🍬':'candy','🍺':'beer','🍻':'beer','🌭':'sausage','☀':'sun','🍞':'bread','🗺':'map','🛸':'ufo',
+    '🌿':'leaf','❄':'snow','⏱':'stopwatch','🔢':'hash','👑':'crown','🎉':'party','⚠':'warning','💨':'wind','⚡':'bolt','📍':'pin',
+    '🍀':'clover','🏁':'finish','👤':'user','🧩':'puzzle','🔒':'lock','🔓':'unlock','🎁':'gift','🔀':'shuffle','⚽':'soccer',
+    '🏛':'temple','⛪':'church','🏭':'factory','🛖':'hut','🍷':'wine','⛈':'storm','💀':'skull','🎺':'horn','🔤':'letters',
+    '🚬':'cigarette','🎮':'gamepad','🥇':'medal','🥈':'medal','🥉':'medal','◎':'ring','🟦':'square'
+  };
+  var sprite = '<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">' +
+    Object.keys(ICONS).map(function(k){ return '<symbol id="i-'+k+'" viewBox="0 0 24 24">'+ICONS[k]+'</symbol>'; }).join('') + '</svg>';
+  document.body.insertAdjacentHTML('afterbegin', sprite);
+  function iconSvg(name){ return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-'+name+'"/></svg>'; }
+
+  var RUN = /(?:(?:[\u2190-\u21FF\u2300-\u23FF\u25A0-\u27BF\u2B00-\u2BFF]|[\uD83C-\uD83E][\uDC00-\uDFFF])\uFE0F?)+/g;
+  var SKIP = 'svg, script, style, textarea, input, select, option, [data-noicon], #tipBubble';
+  function lookup(run){
+    var plain = run.replace(/\uFE0F/g,'');
+    if(MAP[plain]) return [iconSvg(MAP[plain])];
+    var out = [], cps = Array.from(plain);
+    cps.forEach(function(ch){ out.push(MAP[ch] ? iconSvg(MAP[ch]) : null); });
+    return out.some(function(x){ return x; }) ? out.map(function(x,i){ return x || cps[i]; }) : null;
+  }
+  function convertText(node){
+    var s = node.nodeValue; if(!s || !RUN.test(s)){ RUN.lastIndex = 0; return; } RUN.lastIndex = 0;
+    var el = node.parentElement; if(!el || el.closest(SKIP)) return;
+    var html = '', last = 0, changed = false, m;
+    while((m = RUN.exec(s))){
+      var rep = lookup(m[0]);
+      html += escapeText(s.slice(last, m.index));
+      if(rep){ html += rep.map(function(x){ return x.charAt(0)==='<' ? x : escapeText(x); }).join(''); changed = true; }
+      else html += escapeText(m[0]);
+      last = m.index + m[0].length;
+    }
+    RUN.lastIndex = 0;
+    if(!changed) return;
+    html += escapeText(s.slice(last));
+    var tpl = document.createElement('template'); tpl.innerHTML = html;
+    node.parentNode.replaceChild(tpl.content, node);
+  }
+  function escapeText(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function convertTree(root){
+    if(root.nodeType === 3){ convertText(root); return; }
+    if(root.nodeType !== 1 || root.matches(SKIP) || root.closest(SKIP)) return;
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), list = [], n;
+    while((n = w.nextNode())) list.push(n);
+    list.forEach(convertText);
+  }
+  var queue = new Set(), pending = false;
+  function flush(){ pending = false; var q = Array.from(queue); queue.clear(); q.forEach(function(n){ if(n.isConnected) convertTree(n); }); }
+  function enqueue(n){ queue.add(n); if(!pending){ pending = true; requestAnimationFrame(flush); } }
+  new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      if(m.type === 'characterData') enqueue(m.target);
+      else m.addedNodes.forEach(function(n){ if(n.nodeType === 1 || n.nodeType === 3) enqueue(n); });
+    });
+  }).observe(app, {childList:true, subtree:true, characterData:true});
+  convertTree(app);
+
+  // ---------- Menüs (Beamer, Mehr) ----------
+  var menus = [['beamerMenuBtn','beamerMenu'], ['moreMenuBtn','moreMenu']];
+  function closeMenus(except){
+    menus.forEach(function(p){
+      var b = document.getElementById(p[0]), m = document.getElementById(p[1]);
+      if(!b || !m || m === except) return;
+      m.hidden = true; b.setAttribute('aria-expanded','false');
+    });
+  }
+  menus.forEach(function(p){
+    var b = document.getElementById(p[0]), m = document.getElementById(p[1]);
+    if(!b || !m) return;
+    b.addEventListener('click', function(e){
+      e.stopPropagation();
+      closeMenus(m); hideTip();
+      m.hidden = !m.hidden; b.setAttribute('aria-expanded', m.hidden ? 'false' : 'true');
+    });
+    m.addEventListener('click', function(e){ if(e.target.closest('.menu-item')) setTimeout(function(){ closeMenus(null); }, 0); });
+  });
+  document.addEventListener('click', function(e){ if(!e.target.closest('.menu-wrap')) closeMenus(null); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ closeMenus(null); hideTip(); } });
+
+  // ---------- Navigation: Minispiel-Anzeige und Hilfe ----------
+  function showView(id){
+    document.querySelectorAll('.rail-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.view === id); });
+    document.querySelectorAll('.view').forEach(function(v){ v.classList.toggle('active', v.id === id); });
+    var main = document.querySelector('main'); if(main) main.scrollTop = 0; window.scrollTo(0, 0);
+  }
+  // Minispiel-Tools: ein Bereich pro Reiter
+  function showMgTab(name){
+    document.querySelectorAll('#mgTabs [data-mgtab]').forEach(function(b){ b.classList.toggle('active', b.dataset.mgtab === name); });
+    document.querySelectorAll('[data-mgpane]').forEach(function(p){ p.style.display = p.dataset.mgpane === name ? '' : 'none'; });
+    var d = document.querySelector('#view-minigames > .desc'); if(d) d.style.display = name === 'beamer' ? 'none' : '';
+  }
+  document.querySelectorAll('#mgTabs [data-mgtab]').forEach(function(b){ b.addEventListener('click', function(){ showMgTab(b.dataset.mgtab); }); });
+  showMgTab('stopwatch');
+  var mgBtn = document.getElementById('beamerMinigameBtn');
+  if(mgBtn) mgBtn.addEventListener('click', function(){
+    showView('view-minigames');
+    showMgTab('beamer');
+  });
+  var helpBtn = document.getElementById('helpOpenBtn');
+  if(helpBtn) helpBtn.addEventListener('click', function(){ showView('view-help'); });
+
+  // ---------- Fragezeichen-Hinweise ----------
+  var tip = document.createElement('div'); tip.id = 'tipBubble'; tip.hidden = true; tip.setAttribute('role','tooltip'); document.body.appendChild(tip);
+  var tipFor = null;
+  function hideTip(){ tip.hidden = true; if(tipFor) tipFor.classList.remove('open'); tipFor = null; }
+  function showTip(el){
+    if(tipFor) tipFor.classList.remove('open');
+    tipFor = el; el.classList.add('open');
+    tip.textContent = el.getAttribute('data-tip'); tip.hidden = false;
+    var r = el.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+    var left = Math.min(Math.max(12, r.left + r.width/2 - tw/2), window.innerWidth - tw - 12);
+    var top = r.bottom + 8; if(top + th > window.innerHeight - 12) top = Math.max(12, r.top - th - 8);
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+  }
+  document.addEventListener('click', function(e){
+    var q = e.target.closest('.qmark[data-tip]');
+    if(q){ e.preventDefault(); e.stopPropagation(); if(tipFor === q && !tip.hidden) hideTip(); else showTip(q); return; }
+    hideTip();
+  }, true);
+  window.addEventListener('scroll', hideTip, true);
+  window.addEventListener('resize', hideTip);
+
+  // ---------- Beamer-Status: nur sichtbar, wenn etwas läuft ----------
+  var statusChip = document.getElementById('beamerStatusChip');
+  var linkBtn = document.getElementById('beamerLinkBtn');
+  var toggle = document.getElementById('mgBeamerToggleBtn');
+  var menuBtn = document.getElementById('beamerMenuBtn');
+  function updateLive(){
+    var parts = [];
+    var linked = !!(linkBtn && linkBtn.classList.contains('linked'));
+    if(linked) parts.push('Beamer verbunden');
+    var mgOn = !!(toggle && toggle.textContent.trim() === 'AN');
+    if(mgOn) parts.push('Minispiel-Anzeige aktiv');
+    var tl = document.querySelector('#mgTabs .tab-live'); if(tl) tl.hidden = !mgOn;
+    if(menuBtn) menuBtn.classList.toggle('linked', linked);
+    if(!statusChip) return;
+    statusChip.hidden = parts.length === 0;
+    statusChip.textContent = parts.join(' · ');
+  }
+  var mo = new MutationObserver(updateLive);
+  [linkBtn, toggle].forEach(function(el){ if(el) mo.observe(el, {attributes:true, childList:true, characterData:true, subtree:true}); });
+  updateLive();
+  // Das Minispiel-Panel wird per JS neu aufgebaut – dann hängt der Schalter evtl. neu im DOM
+  setInterval(function(){ var t = document.getElementById('mgBeamerToggleBtn'); if(t !== toggle){ toggle = t; if(t) mo.observe(t, {attributes:true, childList:true, characterData:true, subtree:true}); updateLive(); } }, 1500);
+})();
+</script></body>
 </html>
