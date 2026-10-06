@@ -4760,12 +4760,27 @@ window.addEventListener('unhandledrejection', function(e){
       <p class="desc" style="margin:10px 0 8px;">${est?'Alle schätzen laut eine Zahl.':'Alle antworten laut.'} Dann auflösen.</p>
       <button class="pill-btn" id="pgReveal">Auflösen</button>` : `
       <div class="result-banner" style="margin-top:8px;"><div class="sub" style="margin:0;">Antwort</div><div class="big">${escapeHtml(est ? pgFmtNum(c.a, c.unit) : c.a)}</div>${est && c.hint ? `<div class="sub">${escapeHtml(c.hint)}</div>` : ''}</div>
-      <p class="desc" style="margin:10px 0 4px;">${est?'Wer lag am nächsten?':'Wer hatte es richtig?'}</p>
+      <p class="desc" style="margin:10px 0 4px;">${est?'Wer lag am nächsten?':'Wer hatte es richtig?'} <span style="opacity:.7;">(Mehrfachauswahl, dann bestätigen)</span></p>
       ${pgPlayerButtons(g,'pg-award')}
-      <div style="margin-top:8px;"><button class="pill-btn subtle" id="pgNone">Niemand</button></div>`) + pgAbortBtn();
+      <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"><button class="pill-btn" id="pgAwardOk" disabled style="opacity:.5;">Punkt vergeben</button><button class="pill-btn subtle" id="pgNone">Niemand</button></div>`) + pgAbortBtn();
     pgWireAbort(panel);
     const rv = panel.querySelector('#pgReveal'); if(rv) rv.addEventListener('click', ()=>{ g.sub = 'reveal'; scheduleSave(); pgSendState(); pgRender(); });
-    panel.querySelectorAll('.pg-award').forEach(x=>x.addEventListener('click', ()=>{ pgAward(x.dataset.id,1); const p = playerById(x.dataset.id); g.lastWinner = p ? {name:p.name, color:p.color} : null; pgSendState(); setTimeout(pgAdvance, 1200); panel.innerHTML = '<p class="desc">Punkt für '+escapeHtml(p?p.name:'')+' ✓</p>'; }));
+    // 2.3.72: Mehrfachauswahl, mehrere Personen können dieselbe Frage richtig haben (bekommen je einen Punkt)
+    const awardSel = new Set(), awardOk = panel.querySelector('#pgAwardOk');
+    panel.querySelectorAll('.pg-award').forEach(x=>x.addEventListener('click', ()=>{
+      const id = x.dataset.id;
+      if(awardSel.has(id)){ awardSel.delete(id); x.classList.remove('active'); } else { awardSel.add(id); x.classList.add('active'); }
+      if(awardOk){ awardOk.disabled = !awardSel.size; awardOk.style.opacity = awardSel.size ? '1' : '.5'; awardOk.textContent = awardSel.size>1 ? 'Punkte vergeben ('+awardSel.size+')' : 'Punkt vergeben'; }
+    }));
+    if(awardOk) awardOk.addEventListener('click', ()=>{
+      if(!awardSel.size) return;
+      const ps = [...awardSel].map(id=>playerById(id)).filter(Boolean);
+      awardSel.forEach(id=>pgAward(id,1));
+      const names = ps.map(p=>p.name).join(' & ');
+      g.lastWinner = ps.length ? {name:names, color:ps[0].color} : null;
+      pgSendState(); setTimeout(pgAdvance, 1200);
+      panel.innerHTML = '<p class="desc">Punkt für '+escapeHtml(names)+' ✓</p>';
+    });
     const nn = panel.querySelector('#pgNone'); if(nn) nn.addEventListener('click', ()=>pgAdvance());
   }
 
