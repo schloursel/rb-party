@@ -1258,7 +1258,17 @@ window.addEventListener('unhandledrejection', function(e){
   // >>> HIER die Adresse der eigenen Firebase Realtime Database eintragen (siehe README), z. B.
   // >>> 'https://mein-projekt-default-rtdb.europe-west1.firebasedatabase.app'
   const FIREBASE_DB_URL = 'https://rb-party-default-rtdb.europe-west1.firebasedatabase.app';
-  const HOST_STALE_MS = 180000;
+  // 2.3.73: Verbindung robuster. Der Beamer-Herzschlag darf 5 statt 3 Minuten alt sein (Tablets und Browser drosseln Zeitgeber im Hintergrund).
+  const HOST_STALE_MS = 300000;
+  // Bildschirm anlassen (Wake Lock), damit Tablet, TV-Browser und Handy nicht einschlafen und die Verbindung nicht abreißt.
+  let screenLock = null;
+  async function keepScreenOn(){
+    try{
+      if(!('wakeLock' in navigator) || document.hidden || screenLock) return;
+      screenLock = await navigator.wakeLock.request('screen');
+      screenLock.addEventListener('release', ()=>{ screenLock = null; });
+    }catch(e){ screenLock = null; }
+  }
   function fbBase(){ const u = String(FIREBASE_DB_URL||'').trim().replace(/\/+$/,''); return /^https:\/\/[^\s]+$/.test(u) ? u : ''; }
   function fbUrl(code, node){ return fbBase() + '/rb/' + code + '/' + node + '.json'; }
   function fbGet(code, node){ return fetch(fbUrl(code,node), {cache:'no-store'}).then(r=>{ if(!r.ok) throw new Error('http'+r.status); return r.json(); }); }
@@ -1323,10 +1333,22 @@ window.addEventListener('unhandledrejection', function(e){
           else if(padLink.status !== 'verbunden') padLinkSetStatus('verbunden');
         }).catch(()=>{ padLink.fails++; if(padLink.fails >= 3) retry('fehler:Keine Verbindung zum Server (Internet?). Es wird weiter versucht …'); });
       };
+      padLink.beat = beat;
       beat();
       padLink.timer = setInterval(beat, 10000);
+      keepScreenOn();
     }).catch(()=>retry('fehler:Keine Verbindung zum Server (Internet?). Es wird weiter versucht …'));
   }
+  // 2.3.73: Nach Sperrbildschirm, App-Wechsel oder Netzwechsel sofort Herzschlag senden bzw. neu verbinden (statt auf den nächsten Zeitgeber zu warten)
+  function padLinkWake(){
+    if(!padLink.want) return;
+    keepScreenOn();
+    if(padLink.ok && padLink.beat){ try{ padLink.beat(); }catch(e){} padLinkSendState(state); }
+    else { clearTimeout(padLink.retry); padLinkConnect(padLink.code); }
+  }
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) padLinkWake(); });
+  window.addEventListener('online', padLinkWake);
+  window.addEventListener('pageshow', padLinkWake);
 
   document.addEventListener('pointerdown', function(e){
     const active = document.activeElement;
@@ -12292,26 +12314,48 @@ function waldfestSceneMarkup(){
       if(!msg || !msg.screen) return;
       if(msg.seq !== lastSeq){ lastSeq = msg.seq; renderScreen(msg); }
     }
-    let hostTimer = null, hostRetry = null, padWatch = null, hostCode = '', hostStreams = [], lastPadSeen = 0;
+    let hostTimer = null, hostRetry = null, padWatch = null, hostWatch = null, hostCode = '', hostStreams = [], lastPadSeen = 0, hostBeat = null, hostFails = 0;
     function stopHost(){
-      clearTimeout(hostRetry); clearInterval(hostTimer); clearInterval(padWatch);
-      hostStreams.forEach(s=>{ try{ s.close(); }catch(e){} });
-      hostStreams = [];
+      clearTimeout(hostRetry); clearInterval(hostTimer); clearInterval(padWatch); clearInterval(hostWatch);
+      hostStreams.forEach(s=>{ s.dead = true; try{ s.es.close(); }catch(e){} });
+      hostStreams = []; hostBeat = null;
     }
-    // Live-Verbindung zu einem Eintrag der Datenbank (Server-Sent Events). Der erste Treffer ist der bereits gespeicherte Wert.
+    // Live-Verbindung zu einem Eintrag der Datenbank (Server-Sent Events). Der erste Treffer pro Verbindung ist der bereits gespeicherte Wert.
+    // 2.3.73: Die Verbindung öffnet sich selbst neu, wenn sie abbricht (readyState CLOSED), Firebase sie beendet oder länger als 75 s
+    // nichts kommt (Firebase schickt alle 30 s ein „keep-alive“). Vorher blieb ein abgebrochener Datenstrom tot, bis man neu gekoppelt hat,
+    // und nach jedem automatischen Neuaufbau wurde der alte Stand noch einmal als neues Ereignis abgespielt.
     function openStream(code, node, onData){
-      let first = true;
-      const es = new EventSource(fbUrl(code, node));
-      const h = e=>{ let d; try{ d = JSON.parse(e.data); }catch(err){ return; } const isFirst = first; first = false; onData(d ? d.data : null, isFirst); };
-      es.addEventListener('put', h);
-      es.addEventListener('patch', h);
-      hostStreams.push(es);
+      const st = { es:null, last:Date.now(), first:true, dead:false, reopen:null };
+      const open = ()=>{
+        if(st.dead) return;
+        try{ if(st.es) st.es.close(); }catch(e){}
+        st.first = true; st.last = Date.now();
+        const es = new EventSource(fbUrl(code, node)); st.es = es;
+        const again = ()=>{ if(st.dead || st.es !== es) return; try{ es.close(); }catch(e){} setTimeout(open, 3000); };
+        es.onopen = ()=>{ st.last = Date.now(); st.first = true; };
+        es.onerror = ()=>{ if(es.readyState === 2) again(); };
+        es.addEventListener('keep-alive', ()=>{ st.last = Date.now(); });
+        es.addEventListener('cancel', again);
+        es.addEventListener('auth_revoked', again);
+        const h = e=>{ st.last = Date.now(); let d; try{ d = JSON.parse(e.data); }catch(err){ return; } const isFirst = st.first; st.first = false; onData(d ? d.data : null, isFirst); };
+        es.addEventListener('put', h);
+        es.addEventListener('patch', h);
+      };
+      st.reopen = open;
+      open();
+      hostStreams.push(st);
     }
     function goLive(code){
       hostCode = code;
       try{ localStorage.setItem('rbparty_beamer_code', code); }catch(e){}
       bmLink.err = ''; bmLink.code = code; bmLinkChanged();
-      hostTimer = setInterval(()=>{ fbPut(code, 'host', {t:Date.now()}).catch(()=>{}); }, 20000);
+      hostBeat = ()=>{
+        fbPut(code, 'host', {t:Date.now()}).then(()=>{ hostFails = 0; }).catch(()=>{ hostFails++; if(hostFails >= 3){ hostFails = 0; hostStreams.forEach(s=>s.reopen()); } });
+      };
+      hostBeat();
+      hostTimer = setInterval(hostBeat, 15000);
+      hostWatch = setInterval(()=>{ hostStreams.forEach(s=>{ if(Date.now() - s.last > 75000) s.reopen(); }); }, 10000);
+      keepScreenOn();
       openStream(code, 'ev', (raw, isFirst)=>{
         if(isFirst || typeof raw !== 'string') return; // alter Stand aus früherer Sitzung wird nicht abgespielt
         try{ onPadMessage(JSON.parse(raw)); }catch(e){}
@@ -12326,7 +12370,8 @@ function waldfestSceneMarkup(){
         if(!bmLink.linked){ bmLink.linked = true; bmLinkChanged(); }
       });
       padWatch = setInterval(()=>{
-        if(bmLink.linked && Date.now() - lastPadSeen > 35000){ bmLink.linked = false; bmLinkChanged(); }
+        // 90 s statt 35 s: Das Pad sendet alle 10 s, im Hintergrund drosseln Handys das aber auf etwa 1× pro Minute
+        if(bmLink.linked && Date.now() - lastPadSeen > 90000){ bmLink.linked = false; bmLinkChanged(); }
       }, 5000);
     }
     function startHost(fresh){
@@ -12350,6 +12395,18 @@ function waldfestSceneMarkup(){
       tryCode(0);
     }
     bmLink.renew = ()=>{ const old = hostCode; if(old) fbDel(old, 'host'); startHost(true); };
+    bmLink.streams = ()=>hostStreams;
+    // 2.3.73: Nach Sperrbildschirm, Tab-Wechsel oder Netzwechsel sofort Herzschlag senden und tote Datenströme neu öffnen
+    const hostWake = ()=>{
+      if(!hostCode) return;
+      keepScreenOn();
+      if(hostBeat) hostBeat();
+      hostStreams.forEach(s=>{ if(!s.es || s.es.readyState !== 1 || Date.now() - s.last > 45000) s.reopen(); });
+    };
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) hostWake(); });
+    window.addEventListener('online', hostWake);
+    window.addEventListener('pageshow', hostWake);
+    window.addEventListener('focus', hostWake);
     let inFrame = false; try{ inFrame = window.self !== window.top; }catch(e){ inFrame = true; }
     if(/^https?:$/.test(location.protocol) && !inFrame) startHost(false); // Vorschau-Fenster im Pad (iframe) legt keinen Raum an
 
