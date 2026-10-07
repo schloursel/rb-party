@@ -975,6 +975,7 @@
     </nav>
     <main>
       <section class="view active" id="view-flow">
+        <div style="display:flex; justify-content:flex-end; margin:0 0 8px;"><button type="button" class="pill-btn subtle" id="legendBtn" title="Legende der Karte: Feldtypen, Orte und Sprung">🗺️ Legende</button></div>
         <div class="card-panel" id="flowPanel"></div>
       </section>
 
@@ -1130,6 +1131,14 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="legendModal">
+    <div class="modal-sheet" style="max-height:92vh; overflow-y:auto;">
+      <h3 class="modal-title">🗺️ Legende der Karte</h3>
+      <p class="modal-sub">So bedeuten die Felder auf dem gedruckten Spielplan.</p>
+      <div id="legendBody"></div>
+      <div class="modal-actions"><button class="pill-btn" id="legendClose">Schließen</button></div>
+    </div>
+  </div>
   <div class="modal-backdrop" id="newGameModal">
     <div class="modal-sheet" style="max-height:92vh; overflow-y:auto;">
       <h3 class="modal-title">🎲 Spiel starten</h3>
@@ -1748,11 +1757,150 @@ window.addEventListener('unhandledrejection', function(e){
     {name:"Bunker", note:"Hier liegen Papes und Tabak – siehe Sonderfunktion beim Ort selbst.", traderText:"", items:[]}
   ];
 
-  // Spielbrett-Layout, importiert aus rottenberg-karte-2026-10-06.json (Karten-Editor-Export, 102 Felder)
-  const DEFAULT_BOARD = {"bild":{"breite":1233,"hoehe":1902,"eigenesBild":true},"feldtypen":[{"id":"leer","name":"Unbelegt","farbe":"#ffffff","symbol":""},{"id":"rad","name":"Radfeld","farbe":"#0ebe23","symbol":"◎"},{"id":"minispiel","name":"Minispielfeld","farbe":"#00470e","symbol":"⚄"},{"id":"ereignis","name":"Ereignisfeld","farbe":"#f54242","symbol":"?"},{"id":"herausforderung","name":"Herausforderungsfeld","farbe":"#ad0b0b","symbol":"!"},{"id":"duell","name":"Duellfeld","farbe":"#cd381d","symbol":"VS"},{"id":"o-kirche","name":"Kirche","farbe":"#F7EBC8","symbol":"⛪"},{"id":"o-kapelle","name":"Kapelle","farbe":"#F7EBC8","symbol":"🕯️"},{"id":"o-bunker","name":"Bunker","farbe":"#F7EBC8","symbol":"63"},{"id":"o-dorflade","name":"Dorflade","farbe":"#F7EBC8","symbol":"🛒"},{"id":"o-holler","name":"Holler","farbe":"#F7EBC8","symbol":"🍷"},{"id":"o-schwimmbad","name":"Schwimmbad","farbe":"#F7EBC8","symbol":"🏊"},{"id":"o-kalkwerk","name":"Kalkwerk","farbe":"#F7EBC8","symbol":"🏭"},{"id":"o-waldfest","name":"Waldfest","farbe":"#F7EBC8","symbol":"🍺"},{"id":"o-dorfplatz","name":"Dorfplatz","farbe":"#F7EBC8","symbol":"🏛️"},{"id":"o-sportplatz","name":"Sportplatz","farbe":"#F7EBC8","symbol":"⚽"},{"id":"o-biergarten","name":"Biergarten","farbe":"#F7EBC8","symbol":"🍻"},{"id":"o-kaugummi","name":"Kaugummiautomat","farbe":"#F7EBC8","symbol":"🍬"}],"felder":[{"nr":1,"x":531.59,"y":73.36,"xRel":0.43114,"yRel":0.03857,"typ":"o-waldfest","typName":"Waldfest","ort":null,"kreuzung":false,"nachbarn":[2,85]},{"nr":2,"x":590.7,"y":68.26,"xRel":0.47907,"yRel":0.03589,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[1,3]},{"nr":3,"x":645.83,"y":37.97,"xRel":0.52379,"yRel":0.01996,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[2,4]},{"nr":4,"x":708.18,"y":23.85,"xRel":0.57435,"yRel":0.01254,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[3,5]},{"nr":5,"x":751.93,"y":85.16,"xRel":0.60984,"yRel":0.04477,"typ":"o-schwimmbad","typName":"Schwimmbad","ort":null,"kreuzung":false,"nachbarn":[4,6]},{"nr":6,"x":793.79,"y":149.98,"xRel":0.64379,"yRel":0.07885,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[5,7]},{"nr":7,"x":821.83,"y":210.39,"xRel":0.66653,"yRel":0.11062,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[6,8]},{"nr":8,"x":856.98,"y":266.36,"xRel":0.69504,"yRel":0.14004,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[7,9]},{"nr":9,"x":902.53,"y":314.43,"xRel":0.73198,"yRel":0.16532,"typ":"duell","typName":"Duellfeld","ort":null,"kreuzung":false,"nachbarn":[8,10]},{"nr":10,"x":962.66,"y":342.33,"xRel":0.78074,"yRel":0.17999,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[9,11]},{"nr":11,"x":1037.36,"y":359.41,"xRel":0.84133,"yRel":0.18896,"typ":"o-kalkwerk","typName":"Kalkwerk","ort":null,"kreuzung":false,"nachbarn":[10,12]},{"nr":12,"x":1073.67,"y":425.01,"xRel":0.87077,"yRel":0.22346,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[11,13]},{"nr":13,"x":1089.6,"y":489.74,"xRel":0.88369,"yRel":0.25749,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[12,14]},{"nr":14,"x":1102.49,"y":555.15,"xRel":0.89415,"yRel":0.29187,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[13,15]},{"nr":15,"x":1108.66,"y":621.45,"xRel":0.89916,"yRel":0.32673,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[14,16]},{"nr":16,"x":1126.41,"y":685.39,"xRel":0.91356,"yRel":0.36035,"typ":"herausforderung","typName":"Herausforderungsfeld","ort":null,"kreuzung":false,"nachbarn":[15,17]},{"nr":17,"x":1131.18,"y":751.85,"xRel":0.91742,"yRel":0.39529,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[16,18]},{"nr":18,"x":1132.8,"y":823.18,"xRel":0.91873,"yRel":0.4328,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":true,"nachbarn":[17,19,97]},{"nr":19,"x":1080.34,"y":816.89,"xRel":0.87619,"yRel":0.42949,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[18,20]},{"nr":20,"x":1011.37,"y":800.68,"xRel":0.82025,"yRel":0.42097,"typ":"o-bunker","typName":"Bunker","ort":null,"kreuzung":false,"nachbarn":[19,21]},{"nr":21,"x":941.81,"y":787.39,"xRel":0.76384,"yRel":0.41398,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[20,22]},{"nr":22,"x":889.83,"y":757.77,"xRel":0.72168,"yRel":0.39841,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[21,23]},{"nr":23,"x":830.9,"y":744.97,"xRel":0.67389,"yRel":0.39168,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[22,24]},{"nr":24,"x":760.23,"y":744.09,"xRel":0.61657,"yRel":0.39121,"typ":"o-biergarten","typName":"Biergarten","ort":null,"kreuzung":true,"nachbarn":[23,25,77]},{"nr":25,"x":733.71,"y":809.21,"xRel":0.59506,"yRel":0.42545,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[24,26]},{"nr":26,"x":719.37,"y":886.94,"xRel":0.58343,"yRel":0.46632,"typ":"o-dorfplatz","typName":"Dorfplatz","ort":null,"kreuzung":true,"nachbarn":[25,27,84]},{"nr":27,"x":753.35,"y":941.67,"xRel":0.61099,"yRel":0.4951,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[26,28]},{"nr":28,"x":782.3,"y":998.08,"xRel":0.63447,"yRel":0.52475,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[27,29]},{"nr":29,"x":814.98,"y":1052.58,"xRel":0.66097,"yRel":0.55341,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[28,30]},{"nr":30,"x":843.5,"y":1109.36,"xRel":0.6841,"yRel":0.58326,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[29,31]},{"nr":31,"x":881.37,"y":1160.09,"xRel":0.71482,"yRel":0.60993,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[30,32]},{"nr":32,"x":924.74,"y":1211.39,"xRel":0.74999,"yRel":0.6369,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":true,"nachbarn":[31,33,101]},{"nr":33,"x":930.54,"y":1276.77,"xRel":0.7547,"yRel":0.67128,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[32,34]},{"nr":34,"x":868.37,"y":1289.27,"xRel":0.70428,"yRel":0.67785,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[33,35]},{"nr":35,"x":804.94,"y":1298.55,"xRel":0.65283,"yRel":0.68273,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[34,36]},{"nr":36,"x":745.08,"y":1321.65,"xRel":0.60429,"yRel":0.69487,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[35,37]},{"nr":37,"x":689.3,"y":1353.56,"xRel":0.55905,"yRel":0.71165,"typ":"herausforderung","typName":"Herausforderungsfeld","ort":null,"kreuzung":false,"nachbarn":[36,38]},{"nr":38,"x":636.22,"y":1397.19,"xRel":0.51599,"yRel":0.73459,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":true,"nachbarn":[37,39,96]},{"nr":39,"x":585.47,"y":1446.96,"xRel":0.47484,"yRel":0.76076,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[38,40]},{"nr":40,"x":538.19,"y":1493.59,"xRel":0.43649,"yRel":0.78528,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[39,41]},{"nr":41,"x":492.73,"y":1541.98,"xRel":0.39962,"yRel":0.81072,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[40,42]},{"nr":42,"x":465.18,"y":1601.13,"xRel":0.37727,"yRel":0.84181,"typ":"herausforderung","typName":"Herausforderungsfeld","ort":null,"kreuzung":false,"nachbarn":[41,43]},{"nr":43,"x":453.94,"y":1666.57,"xRel":0.36816,"yRel":0.87622,"typ":"duell","typName":"Duellfeld","ort":null,"kreuzung":false,"nachbarn":[42,44]},{"nr":44,"x":444.09,"y":1732.24,"xRel":0.36017,"yRel":0.91075,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[43,45]},{"nr":45,"x":441.36,"y":1799.8,"xRel":0.35796,"yRel":0.94627,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[44,46]},{"nr":46,"x":381.88,"y":1829.37,"xRel":0.30972,"yRel":0.96181,"typ":"o-holler","typName":"Holler","ort":null,"kreuzung":false,"nachbarn":[45,47]},{"nr":47,"x":306.32,"y":1810.59,"xRel":0.24843,"yRel":0.95194,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[46,48]},{"nr":48,"x":250.98,"y":1835.3,"xRel":0.20355,"yRel":0.96493,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[47,49]},{"nr":49,"x":185.93,"y":1847.1,"xRel":0.15079,"yRel":0.97114,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[48,50]},{"nr":50,"x":118.55,"y":1842.46,"xRel":0.09615,"yRel":0.9687,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[49,51]},{"nr":51,"x":55.19,"y":1820.55,"xRel":0.04476,"yRel":0.95717,"typ":"herausforderung","typName":"Herausforderungsfeld","ort":null,"kreuzung":false,"nachbarn":[50,52]},{"nr":52,"x":25.61,"y":1761.46,"xRel":0.02077,"yRel":0.92611,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[51,53]},{"nr":53,"x":18.7,"y":1694.21,"xRel":0.01517,"yRel":0.89075,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[52,54]},{"nr":54,"x":1.62,"y":1629.84,"xRel":0.00131,"yRel":0.85691,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[53]},{"nr":55,"x":4.51,"y":1218.5,"xRel":0.00366,"yRel":0.64064,"typ":"o-dorflade","typName":"Dorflade","ort":null,"kreuzung":false,"nachbarn":[56]},{"nr":56,"x":68.68,"y":1180.47,"xRel":0.0557,"yRel":0.62065,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[55,57]},{"nr":57,"x":115.38,"y":1136.53,"xRel":0.09357,"yRel":0.59754,"typ":"herausforderung","typName":"Herausforderungsfeld","ort":null,"kreuzung":false,"nachbarn":[56,58]},{"nr":58,"x":165.4,"y":1096.25,"xRel":0.13414,"yRel":0.57637,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[57,59]},{"nr":59,"x":211.74,"y":1051.77,"xRel":0.17172,"yRel":0.55298,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[58,60]},{"nr":60,"x":253.66,"y":1003.38,"xRel":0.20572,"yRel":0.52754,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[59,61]},{"nr":61,"x":308.83,"y":973.02,"xRel":0.25047,"yRel":0.51158,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[60,62]},{"nr":62,"x":377.55,"y":968.43,"xRel":0.3062,"yRel":0.50916,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":true,"nachbarn":[61,63,90]},{"nr":63,"x":417.6,"y":913.69,"xRel":0.33869,"yRel":0.48038,"typ":"herausforderung","typName":"Herausforderungsfeld","ort":null,"kreuzung":false,"nachbarn":[62,64]},{"nr":64,"x":480.47,"y":883.05,"xRel":0.38968,"yRel":0.46428,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[63,65]},{"nr":65,"x":540.42,"y":850.6,"xRel":0.4383,"yRel":0.44721,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[64,83]},{"nr":66,"x":1.26,"y":438.33,"xRel":0.00102,"yRel":0.23046,"typ":"duell","typName":"Duellfeld","ort":null,"kreuzung":false,"nachbarn":[67]},{"nr":67,"x":81.92,"y":443.07,"xRel":0.06644,"yRel":0.23295,"typ":"o-kapelle","typName":"Kapelle","ort":null,"kreuzung":false,"nachbarn":[66,68]},{"nr":68,"x":162.41,"y":450.44,"xRel":0.13172,"yRel":0.23683,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[67,69]},{"nr":69,"x":232.47,"y":454.33,"xRel":0.18854,"yRel":0.23887,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[68,70]},{"nr":70,"x":301.56,"y":466.14,"xRel":0.24458,"yRel":0.24508,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[69,71]},{"nr":71,"x":371.12,"y":494.29,"xRel":0.30099,"yRel":0.25988,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":true,"nachbarn":[70,72,78]},{"nr":72,"x":438.8,"y":490.67,"xRel":0.35588,"yRel":0.25798,"typ":"duell","typName":"Duellfeld","ort":null,"kreuzung":true,"nachbarn":[71,73,89]},{"nr":73,"x":474.51,"y":536.43,"xRel":0.38484,"yRel":0.28203,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[72,74]},{"nr":74,"x":540.02,"y":570.58,"xRel":0.43798,"yRel":0.29999,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[73,75]},{"nr":75,"x":570.45,"y":643.19,"xRel":0.46265,"yRel":0.33817,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":true,"nachbarn":[74,76,102]},{"nr":76,"x":610.74,"y":705.62,"xRel":0.49533,"yRel":0.37099,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[75,77]},{"nr":77,"x":680.3,"y":728.47,"xRel":0.55174,"yRel":0.383,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[24,76]},{"nr":78,"x":379.41,"y":575.17,"xRel":0.30771,"yRel":0.3024,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[71,79]},{"nr":79,"x":405.91,"y":646.75,"xRel":0.32921,"yRel":0.34003,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[78,80]},{"nr":80,"x":444.26,"y":706.06,"xRel":0.36031,"yRel":0.37122,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[79,81]},{"nr":81,"x":496,"y":760.86,"xRel":0.40227,"yRel":0.40003,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":true,"nachbarn":[80,82,102]},{"nr":82,"x":543.9,"y":784.87,"xRel":0.44112,"yRel":0.41266,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[81,83]},{"nr":83,"x":600.05,"y":822.67,"xRel":0.48666,"yRel":0.43253,"typ":"o-kaugummi","typName":"Kaugummiautomat","ort":null,"kreuzung":true,"nachbarn":[65,82,84]},{"nr":84,"x":646.58,"y":872.37,"xRel":0.52439,"yRel":0.45866,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[26,83]},{"nr":85,"x":522.12,"y":148.78,"xRel":0.42345,"yRel":0.07822,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[1,86]},{"nr":86,"x":512.32,"y":213.53,"xRel":0.41551,"yRel":0.11227,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[85,87]},{"nr":87,"x":499.44,"y":277.74,"xRel":0.40506,"yRel":0.14603,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[86,88]},{"nr":88,"x":482.39,"y":351.47,"xRel":0.39123,"yRel":0.18479,"typ":"o-sportplatz","typName":"Sportplatz","ort":null,"kreuzung":false,"nachbarn":[87,89]},{"nr":89,"x":460.6,"y":424.04,"xRel":0.37356,"yRel":0.22294,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[72,88]},{"nr":90,"x":421.26,"y":1033.41,"xRel":0.34165,"yRel":0.54333,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[62,91]},{"nr":91,"x":386.63,"y":1084.5,"xRel":0.31357,"yRel":0.57019,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[90,92]},{"nr":92,"x":366.94,"y":1147.26,"xRel":0.2976,"yRel":0.60318,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[91,93]},{"nr":93,"x":412.33,"y":1202.54,"xRel":0.33441,"yRel":0.63225,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[92,94]},{"nr":94,"x":471.15,"y":1246.8,"xRel":0.38212,"yRel":0.65552,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[93,95]},{"nr":95,"x":530.85,"y":1289.39,"xRel":0.43053,"yRel":0.67792,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[94,96]},{"nr":96,"x":587.89,"y":1335.58,"xRel":0.4768,"yRel":0.7022,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[38,95]},{"nr":97,"x":1105.72,"y":897.7,"xRel":0.89677,"yRel":0.47198,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[18,98]},{"nr":98,"x":1100.93,"y":972.51,"xRel":0.89289,"yRel":0.51131,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[97,99]},{"nr":99,"x":1081.58,"y":1044.73,"xRel":0.8772,"yRel":0.54928,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[98,100]},{"nr":100,"x":1029.72,"y":1098.17,"xRel":0.83513,"yRel":0.57738,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[99,101]},{"nr":101,"x":975.58,"y":1150.02,"xRel":0.79122,"yRel":0.60464,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[32,100]},{"nr":102,"x":524.1,"y":696.28,"xRel":0.42506,"yRel":0.36608,"typ":"o-kirche","typName":"Kirche","ort":null,"kreuzung":false,"nachbarn":[75,81]}],"beschriftungen":[]};
-  // Sackgassen-Portale (2.3.68): Die drei Sackgassen (Feld 54, 55 Dorflade, 66) sind miteinander verbunden. Wer eine Sackgasse
-  // weiterzieht, steigt bei einer der beiden anderen wieder ein (ein Sprung zählt als ein Feld). Dadurch muss nie jemand umdrehen.
-  const BOARD_PORTALS = [54, 55, 66];
+  // Spielbrett-Layout, importiert aus rottenberg-karte-layout.json (Karten-Editor-Export, 97 Felder inkl. Kalkwerk; gedruckte Karte: Karte\karte-drucken.html)
+  const DEFAULT_BOARD = {"bild":{"breite":1233,"hoehe":1902,"eigenesBild":true},"feldtypen":[{"id":"leer","name":"Unbelegt","farbe":"#ffffff","symbol":""},{"id":"rad","name":"Radfeld","farbe":"#0ebe23","symbol":"◎"},{"id":"minispiel","name":"Minispielfeld","farbe":"#00470e","symbol":"⚄"},{"id":"ereignis","name":"Ereignisfeld","farbe":"#f54242","symbol":"?"},{"id":"herausforderung","name":"Herausforderungsfeld","farbe":"#ad0b0b","symbol":"!"},{"id":"duell","name":"Duellfeld","farbe":"#cd381d","symbol":"VS"},{"id":"o-kirche","name":"Kirche","farbe":"#F7EBC8","symbol":"⛪"},{"id":"o-kapelle","name":"Kapelle","farbe":"#F7EBC8","symbol":"🕯️"},{"id":"o-bunker","name":"Bunker","farbe":"#F7EBC8","symbol":"63"},{"id":"o-dorflade","name":"Dorflade","farbe":"#F7EBC8","symbol":"🛒"},{"id":"o-holler","name":"Holler","farbe":"#F7EBC8","symbol":"🍷"},{"id":"o-schwimmbad","name":"Schwimmbad","farbe":"#F7EBC8","symbol":"🏊"},{"id":"o-kalkwerk","name":"Kalkwerk","farbe":"#F7EBC8","symbol":"🏭"},{"id":"o-waldfest","name":"Waldfest","farbe":"#F7EBC8","symbol":"🍺"},{"id":"o-dorfplatz","name":"Dorfplatz","farbe":"#F7EBC8","symbol":"🏛️"},{"id":"o-sportplatz","name":"Sportplatz","farbe":"#F7EBC8","symbol":"⚽"},{"id":"o-biergarten","name":"Biergarten","farbe":"#F7EBC8","symbol":"🍻"},{"id":"o-kaugummi","name":"Kaugummiautomat","farbe":"#F7EBC8","symbol":"🍬"}],"felder":[{"nr":1,"x":752.25,"y":142.87,"xRel":0.6101,"yRel":0.07512,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[2,85]},{"nr":2,"x":804.5,"y":199.63,"xRel":0.65247,"yRel":0.10496,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[1,3]},{"nr":3,"x":856.74,"y":256.38,"xRel":0.69484,"yRel":0.13479,"typ":"herausforderung","typName":"Herausforderungsfeld","ort":null,"kreuzung":false,"nachbarn":[2,86]},{"nr":4,"x":1132.8,"y":823.18,"xRel":0.91873,"yRel":0.4328,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":true,"nachbarn":[5,78,94]},{"nr":5,"x":1080.34,"y":816.89,"xRel":0.87619,"yRel":0.42949,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[4,6]},{"nr":6,"x":1011.37,"y":800.68,"xRel":0.82025,"yRel":0.42097,"typ":"o-bunker","typName":"Bunker","ort":null,"kreuzung":false,"nachbarn":[5,7]},{"nr":7,"x":941.81,"y":787.39,"xRel":0.76384,"yRel":0.41398,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[6,8]},{"nr":8,"x":889.83,"y":757.77,"xRel":0.72168,"yRel":0.39841,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[7,9]},{"nr":9,"x":830.9,"y":744.97,"xRel":0.67389,"yRel":0.39168,"typ":"duell","typName":"Duellfeld","ort":null,"kreuzung":false,"nachbarn":[8,10]},{"nr":10,"x":760.23,"y":744.09,"xRel":0.61657,"yRel":0.39121,"typ":"o-biergarten","typName":"Biergarten","ort":null,"kreuzung":true,"nachbarn":[9,11,57]},{"nr":11,"x":733.71,"y":809.21,"xRel":0.59506,"yRel":0.42545,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[10,12]},{"nr":12,"x":719.37,"y":886.94,"xRel":0.58343,"yRel":0.46632,"typ":"o-dorfplatz","typName":"Dorfplatz","ort":null,"kreuzung":true,"nachbarn":[11,13,64]},{"nr":13,"x":753.35,"y":941.67,"xRel":0.61099,"yRel":0.4951,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[12,14]},{"nr":14,"x":782.3,"y":998.08,"xRel":0.63447,"yRel":0.52475,"typ":"herausforderung","typName":"Herausforderungsfeld","ort":null,"kreuzung":false,"nachbarn":[13,15]},{"nr":15,"x":814.98,"y":1052.58,"xRel":0.66097,"yRel":0.55341,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[14,16]},{"nr":16,"x":843.5,"y":1109.36,"xRel":0.6841,"yRel":0.58326,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[15,17]},{"nr":17,"x":881.37,"y":1160.09,"xRel":0.71482,"yRel":0.60993,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[16,18]},{"nr":18,"x":924.74,"y":1211.39,"xRel":0.74999,"yRel":0.6369,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":true,"nachbarn":[17,19,82]},{"nr":19,"x":930.54,"y":1276.77,"xRel":0.7547,"yRel":0.67128,"typ":"herausforderung","typName":"Herausforderungsfeld","ort":null,"kreuzung":false,"nachbarn":[18,20]},{"nr":20,"x":868.37,"y":1289.27,"xRel":0.70428,"yRel":0.67785,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[19,21]},{"nr":21,"x":804.94,"y":1298.55,"xRel":0.65283,"yRel":0.68273,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[20,22]},{"nr":22,"x":745.08,"y":1321.65,"xRel":0.60429,"yRel":0.69487,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[21,23]},{"nr":23,"x":689.3,"y":1353.56,"xRel":0.55905,"yRel":0.71165,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[22,24]},{"nr":24,"x":636.22,"y":1397.19,"xRel":0.51599,"yRel":0.73459,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":true,"nachbarn":[23,25,77]},{"nr":25,"x":585.47,"y":1446.96,"xRel":0.47484,"yRel":0.76076,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[24,26]},{"nr":26,"x":538.19,"y":1493.59,"xRel":0.43649,"yRel":0.78528,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[25,27]},{"nr":27,"x":492.73,"y":1541.98,"xRel":0.39962,"yRel":0.81072,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[26,28]},{"nr":28,"x":465.18,"y":1601.13,"xRel":0.37727,"yRel":0.84181,"typ":"herausforderung","typName":"Herausforderungsfeld","ort":null,"kreuzung":false,"nachbarn":[27,29]},{"nr":29,"x":453.94,"y":1666.57,"xRel":0.36816,"yRel":0.87622,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[28,30]},{"nr":30,"x":444.09,"y":1732.24,"xRel":0.36017,"yRel":0.91075,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[29,31]},{"nr":31,"x":414.27,"y":1799.05,"xRel":0.33598,"yRel":0.94588,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[30,32]},{"nr":32,"x":333.73,"y":1810.98,"xRel":0.27067,"yRel":0.95215,"typ":"o-holler","typName":"Holler","ort":null,"kreuzung":false,"nachbarn":[31,33]},{"nr":33,"x":250.08,"y":1813.4,"xRel":0.20283,"yRel":0.95342,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[32,34]},{"nr":34,"x":176.94,"y":1811.69,"xRel":0.1435,"yRel":0.95252,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[33,35]},{"nr":35,"x":103.87,"y":1807.7,"xRel":0.08424,"yRel":0.95042,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[34,95]},{"nr":36,"x":49.01,"y":1192.64,"xRel":0.03975,"yRel":0.62705,"typ":"o-dorflade","typName":"Dorflade","ort":null,"kreuzung":false,"nachbarn":[37]},{"nr":37,"x":106.88,"y":1143.36,"xRel":0.08668,"yRel":0.60114,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[36,38]},{"nr":38,"x":158.86,"y":1102.03,"xRel":0.12884,"yRel":0.57941,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[37,39]},{"nr":39,"x":207.14,"y":1056.42,"xRel":0.16799,"yRel":0.55543,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[38,40]},{"nr":40,"x":250.79,"y":1006.67,"xRel":0.2034,"yRel":0.52927,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[39,41]},{"nr":41,"x":306.7,"y":973.47,"xRel":0.24874,"yRel":0.51181,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[40,42]},{"nr":42,"x":377.55,"y":968.43,"xRel":0.3062,"yRel":0.50916,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":true,"nachbarn":[41,43,71]},{"nr":43,"x":417.6,"y":913.69,"xRel":0.33869,"yRel":0.48038,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[42,44]},{"nr":44,"x":480.47,"y":883.05,"xRel":0.38968,"yRel":0.46428,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[43,45]},{"nr":45,"x":540.42,"y":850.6,"xRel":0.4383,"yRel":0.44721,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[44,63]},{"nr":46,"x":35.75,"y":436.43,"xRel":0.02899,"yRel":0.22946,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[47]},{"nr":47,"x":109.09,"y":446.68,"xRel":0.08847,"yRel":0.23485,"typ":"o-kapelle","typName":"Kapelle","ort":null,"kreuzung":false,"nachbarn":[46,48]},{"nr":48,"x":182.66,"y":453.78,"xRel":0.14814,"yRel":0.23858,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[47,49]},{"nr":49,"x":246.16,"y":454.87,"xRel":0.19964,"yRel":0.23915,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[48,50]},{"nr":50,"x":308.04,"y":468.37,"xRel":0.24983,"yRel":0.24625,"typ":"herausforderung","typName":"Herausforderungsfeld","ort":null,"kreuzung":false,"nachbarn":[49,51]},{"nr":51,"x":371.12,"y":494.29,"xRel":0.30099,"yRel":0.25988,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":true,"nachbarn":[50,52,58]},{"nr":52,"x":438.8,"y":490.67,"xRel":0.35588,"yRel":0.25798,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":true,"nachbarn":[51,53,70]},{"nr":53,"x":474.51,"y":536.43,"xRel":0.38484,"yRel":0.28203,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[52,54]},{"nr":54,"x":540.02,"y":570.58,"xRel":0.43798,"yRel":0.29999,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[53,55]},{"nr":55,"x":570.45,"y":643.19,"xRel":0.46265,"yRel":0.33817,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":true,"nachbarn":[54,56,83]},{"nr":56,"x":610.74,"y":705.62,"xRel":0.49533,"yRel":0.37099,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[55,57]},{"nr":57,"x":680.3,"y":728.47,"xRel":0.55174,"yRel":0.383,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[10,56]},{"nr":58,"x":379.41,"y":575.17,"xRel":0.30771,"yRel":0.3024,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[51,59]},{"nr":59,"x":405.91,"y":646.75,"xRel":0.32921,"yRel":0.34003,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[58,60]},{"nr":60,"x":444.26,"y":706.06,"xRel":0.36031,"yRel":0.37122,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[59,61]},{"nr":61,"x":496,"y":760.86,"xRel":0.40227,"yRel":0.40003,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":true,"nachbarn":[60,62,83]},{"nr":62,"x":543.9,"y":784.87,"xRel":0.44112,"yRel":0.41266,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[61,63]},{"nr":63,"x":600.05,"y":822.67,"xRel":0.48666,"yRel":0.43253,"typ":"o-kaugummi","typName":"Kaugummiautomat","ort":null,"kreuzung":true,"nachbarn":[45,62,64]},{"nr":64,"x":646.58,"y":872.37,"xRel":0.52439,"yRel":0.45866,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[12,63]},{"nr":65,"x":551.12,"y":98.3,"xRel":0.44697,"yRel":0.05168,"typ":"o-waldfest","typName":"Waldfest","ort":null,"kreuzung":false,"nachbarn":[66,84]},{"nr":66,"x":527.69,"y":167.1,"xRel":0.42797,"yRel":0.08785,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[65,67]},{"nr":67,"x":510.17,"y":226.72,"xRel":0.41376,"yRel":0.1192,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[66,68]},{"nr":68,"x":498.08,"y":287.66,"xRel":0.40396,"yRel":0.15124,"typ":"duell","typName":"Duellfeld","ort":null,"kreuzung":false,"nachbarn":[67,69]},{"nr":69,"x":479.39,"y":357.43,"xRel":0.3888,"yRel":0.18792,"typ":"o-sportplatz","typName":"Sportplatz","ort":null,"kreuzung":false,"nachbarn":[68,70]},{"nr":70,"x":459.78,"y":427.27,"xRel":0.37289,"yRel":0.22464,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[52,69]},{"nr":71,"x":421.26,"y":1033.41,"xRel":0.34165,"yRel":0.54333,"typ":"duell","typName":"Duellfeld","ort":null,"kreuzung":false,"nachbarn":[42,72]},{"nr":72,"x":386.63,"y":1084.5,"xRel":0.31357,"yRel":0.57019,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[71,73]},{"nr":73,"x":366.94,"y":1147.26,"xRel":0.2976,"yRel":0.60318,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[72,74]},{"nr":74,"x":412.33,"y":1202.54,"xRel":0.33441,"yRel":0.63225,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[73,75]},{"nr":75,"x":471.15,"y":1246.8,"xRel":0.38212,"yRel":0.65552,"typ":"herausforderung","typName":"Herausforderungsfeld","ort":null,"kreuzung":false,"nachbarn":[74,76]},{"nr":76,"x":530.85,"y":1289.39,"xRel":0.43053,"yRel":0.67792,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[75,77]},{"nr":77,"x":587.89,"y":1335.58,"xRel":0.4768,"yRel":0.7022,"typ":"duell","typName":"Duellfeld","ort":null,"kreuzung":false,"nachbarn":[24,76]},{"nr":78,"x":1105.72,"y":897.7,"xRel":0.89677,"yRel":0.47198,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[4,79]},{"nr":79,"x":1100.93,"y":972.51,"xRel":0.89289,"yRel":0.51131,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[78,80]},{"nr":80,"x":1081.58,"y":1044.73,"xRel":0.8772,"yRel":0.54928,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[79,81]},{"nr":81,"x":1029.72,"y":1098.17,"xRel":0.83513,"yRel":0.57738,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[80,82]},{"nr":82,"x":975.58,"y":1150.02,"xRel":0.79122,"yRel":0.60464,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[18,81]},{"nr":83,"x":524.1,"y":696.28,"xRel":0.42506,"yRel":0.36608,"typ":"o-kirche","typName":"Kirche","ort":null,"kreuzung":false,"nachbarn":[55,61]},{"nr":84,"x":618.28,"y":138.8,"xRel":0.50144,"yRel":0.07297,"typ":"leer","typName":"Unbelegt","ort":null,"kreuzung":false,"nachbarn":[65,85]},{"nr":85,"x":681.57,"y":160.86,"xRel":0.55278,"yRel":0.08458,"typ":"o-schwimmbad","typName":"Schwimmbad","ort":null,"kreuzung":false,"nachbarn":[1,84]},{"nr":86,"x":902.96,"y":306.07,"xRel":0.73233,"yRel":0.16092,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[3,87]},{"nr":87,"x":960.86,"y":338.17,"xRel":0.77928,"yRel":0.1778,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[86,88]},{"nr":88,"x":1026.93,"y":352.57,"xRel":0.83287,"yRel":0.18537,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[87,89]},{"nr":89,"x":1082.79,"y":407.06,"xRel":0.87818,"yRel":0.21402,"typ":"o-kalkwerk","typName":"Kalkwerk","ort":null,"kreuzung":false,"nachbarn":[88,90]},{"nr":90,"x":1105.72,"y":480.96,"xRel":0.89677,"yRel":0.25287,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[89,91]},{"nr":91,"x":1113.66,"y":548.23,"xRel":0.90321,"yRel":0.28824,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[90,92]},{"nr":92,"x":1114.78,"y":616.09,"xRel":0.90412,"yRel":0.32392,"typ":"herausforderung","typName":"Herausforderungsfeld","ort":null,"kreuzung":false,"nachbarn":[91,93]},{"nr":93,"x":1116.06,"y":683.95,"xRel":0.90516,"yRel":0.35959,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[92,94]},{"nr":94,"x":1125.74,"y":750.98,"xRel":0.91301,"yRel":0.39484,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[4,93]},{"nr":95,"x":79.69,"y":1750.82,"xRel":0.06463,"yRel":0.92052,"typ":"ereignis","typName":"Ereignisfeld","ort":null,"kreuzung":false,"nachbarn":[35,96]},{"nr":96,"x":55.5,"y":1693.95,"xRel":0.04501,"yRel":0.89061,"typ":"minispiel","typName":"Minispielfeld","ort":null,"kreuzung":false,"nachbarn":[95,97]},{"nr":97,"x":31.32,"y":1637.07,"xRel":0.0254,"yRel":0.86071,"typ":"rad","typName":"Radfeld","ort":null,"kreuzung":false,"nachbarn":[96]}],"wege":[{"weg":1,"felder":[1,2,3]},{"weg":2,"felder":[4,5,6,7,8,9,10]},{"weg":3,"felder":[10,11,12]},{"weg":4,"felder":[12,13,14,15,16,17,18]},{"weg":5,"felder":[18,19,20,21,22,23,24]},{"weg":6,"felder":[24,25,26,27,28,29,30]},{"weg":7,"felder":[30,31,32,33,34,35]},{"weg":8,"felder":[36,37,38,39,40,41,42]},{"weg":9,"felder":[42,43,44,45]},{"weg":10,"felder":[46,47,48,49,50,51]},{"weg":11,"felder":[51,52]},{"weg":12,"felder":[52,53,54,55]},{"weg":13,"felder":[55,56,57,10]},{"weg":14,"felder":[51,58,59,60,61]},{"weg":15,"felder":[61,62,63]},{"weg":16,"felder":[63,45]},{"weg":17,"felder":[12,64,63]},{"weg":18,"felder":[65,66,67,68,69,70,52]},{"weg":19,"felder":[42,71,72,73,74,75,76,77,24]},{"weg":20,"felder":[4,78,79,80,81,82,18]},{"weg":21,"felder":[61,83,55]},{"weg":22,"felder":[65,84,85,1]},{"weg":23,"felder":[3,86,87,88,89,90,91,92,93,94,4]},{"weg":24,"felder":[35,95,96,97]}],"beschriftungen":[{"text":"↔️","x":32.09,"y":1124.55},{"text":"↔️","x":35.6,"y":1582.13},{"text":"↔️","x":32.35,"y":493.54}]};
+  // Sackgassen-Portale (2.3.68): Die drei Sackgassen sind miteinander verbunden. Wer eine davon
+  // weiterzieht, steigt bei einer der anderen wieder ein (ein Sprung zählt als ein Feld). Dadurch muss nie jemand umdrehen.
+  // Gezeichnete Karten-Symbole (gleiche wie auf der gedruckten Karte, Quellen: Karte\icons.js und Karte\icons2.js)
+/* RB-Party Karten: Typ-Farben und Namen (Symbole siehe icons2.js). Alle Feldtypen im dunklen Look von Duell und Minispiel: dunkle Füllung, Goldring, heller Symbol-Strich. */
+/* Typ-Metadaten: Füllung, Ring, Iconfarbe (Wappen-Theme), Name, kurze Wirkung für die Pad-Legende */
+const RB_TYPES = {
+  leer:            { fill:'#F3E8C8', ring:'#D4AF37', ink:'#1D3322', name:'Leeres Feld',          info:'Nichts passiert.' },
+  rad:             { fill:'#6A5114', ring:'#D4AF37', ink:'#E8CE6B', name:'Radfeld',              info:'Hash-Rad drehen.' },
+  minispiel:       { fill:'#1D3322', ring:'#D4AF37', ink:'#F3E8C8', name:'Minispielfeld',        info:'Minispiel spielen.' },
+  ereignis:        { fill:'#1E4A66', ring:'#D4AF37', ink:'#F3E8C8', name:'Ereignisfeld',         info:'Ereigniskarte ziehen.' },
+  herausforderung: { fill:'#9A3A1E', ring:'#D4AF37', ink:'#FFF1DC', name:'Herausforderungsfeld', info:'Herausforderung gegen eine Person.' },
+  duell:           { fill:'#7A2415', ring:'#E8CE6B', ink:'#FFFFFF', name:'Duellfeld',            info:'Duell gegen eine Person.' },
+  ort:             { fill:'#F7EBC8', ring:'#D4AF37', ink:'#1D3322' }
+};
+const RB_ORTE = {
+  'o-kirche':'Kirche', 'o-kapelle':'Kapelle', 'o-bunker':'Bunker (Start)', 'o-dorflade':'Dorfladen', 'o-holler':'Holler',
+  'o-schwimmbad':'Schwimmbad', 'o-kalkwerk':'Kalkwerk', 'o-waldfest':'Waldfest', 'o-dorfplatz':'Dorfplatz',
+  'o-sportplatz':'Sportplatz', 'o-biergarten':'Biergarten', 'o-kaugummi':'Kaugummiautomat'
+};
+const { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE } = (() => {
+/* RB-Party Karten-Symbole, Entwurf 2: gefüllte Silhouetten (24x24).
+   Jedes Symbol ist ein Pfad zum Füllen; RB_ICON_RULE2 nennt die Füllregel (Standard: evenodd, Aussparungen = Löcher). */
+const f1 = n => Math.round(n*100)/100;
+const P = pts => 'M' + pts.map(p => f1(p[0]) + ' ' + f1(p[1])).join('L') + 'Z';
+const circ = (cx, cy, r, ccw) => { const s = ccw ? 0 : 1; return `M${f1(cx-r)} ${f1(cy)}a${r} ${r} 0 1 ${s} ${f1(2*r)} 0a${r} ${r} 0 1 ${s} ${f1(-2*r)} 0z`; };
+const rectCw  = (x, y, w, h) => P([[x,y],[x+w,y],[x+w,y+h],[x,y+h]]);
+const rectCcw = (x, y, w, h) => P([[x,y],[x,y+h],[x+w,y+h],[x+w,y]]);
+const rotPts = (pts, deg, cx = 12, cy = 12) => { const a = deg*Math.PI/180, c = Math.cos(a), s = Math.sin(a); return pts.map(([x,y]) => [cx + (x-cx)*c - (y-cy)*s, cy + (x-cx)*s + (y-cy)*c]); };
+const ngon = (cx, cy, r, n, rot = -90) => Array.from({length:n}, (_, i) => { const a = (rot + i*360/n)*Math.PI/180; return [cx + r*Math.cos(a), cy + r*Math.sin(a)]; });
+const area = pts => pts.reduce((s, p, i) => { const q = pts[(i+1) % pts.length]; return s + p[0]*q[1] - q[0]*p[1]; }, 0);
+/* Linie mit Breite w als Fläche; immer im Uhrzeigersinn (cw), mit hole=true gegen den Uhrzeigersinn (Aussparung bei nonzero) */
+function strokePoly(pts, w, hole){
+  const L = [], R = [];
+  pts.forEach((p, i) => {
+    const a = pts[Math.max(0, i-1)], b = pts[Math.min(pts.length-1, i+1)];
+    let tx = b[0]-a[0], ty = b[1]-a[1]; const l = Math.hypot(tx, ty) || 1; tx /= l; ty /= l;
+    L.push([p[0] - ty*w/2, p[1] + tx*w/2]); R.push([p[0] + ty*w/2, p[1] - tx*w/2]);
+  });
+  let poly = L.concat(R.reverse());
+  if ((area(poly) < 0) !== !!hole) poly = poly.reverse();
+  return P(poly);
+}
+const ell = (cx, cy, rx, ry, ccw) => { const s = ccw ? 0 : 1; return `M${f1(cx-rx)} ${f1(cy)}a${rx} ${ry} 0 1 ${s} ${f1(2*rx)} 0a${rx} ${ry} 0 1 ${s} ${f1(-2*rx)} 0z`; };
+const polar = (cx, cy, r, deg) => [cx + r*Math.cos(deg*Math.PI/180), cy + r*Math.sin(deg*Math.PI/180)];
+const polyCw = pts => P(area(pts) < 0 ? pts.slice().reverse() : pts);
+const polyCcw = pts => P(area(pts) > 0 ? pts.slice().reverse() : pts);
+function wedge(r1, r2, a0, a1, cx = 12, cy = 12){
+  const pts = [], n = 6;
+  for (let i = 0; i <= n; i++){ const a = (a0 + (a1-a0)*i/n)*Math.PI/180; pts.push([cx + r2*Math.cos(a), cy + r2*Math.sin(a)]); }
+  for (let i = n; i >= 0; i--){ const a = (a0 + (a1-a0)*i/n)*Math.PI/180; pts.push([cx + r1*Math.cos(a), cy + r1*Math.sin(a)]); }
+  return P(pts);
+}
+function arcPts(cx, cy, r, a0, a1, n = 18){ return Array.from({length:n+1}, (_, i) => { const a = (a0 + (a1-a0)*i/n)*Math.PI/180; return [cx + r*Math.cos(a), cy + r*Math.sin(a)]; }); }
+function spiral(){
+  const pts = []; for (let t = 0; t <= 1; t += 1/48){ const a = (t*2.3*360 - 90)*Math.PI/180, r = 1.2 + t*8.6; pts.push([12 + r*Math.cos(a), 12 + r*Math.sin(a)]); }
+  return strokePoly(pts, 2.2);
+}
+const wave = y => Array.from({length:41}, (_, i) => [1.5 + i*0.525, y + 1.3*Math.sin(i*0.525*Math.PI/2.75)]);
+const sword = deg => [
+  rotPts([[12,0.8],[13.7,3.8],[13.2,14.6],[10.8,14.6],[10.3,3.8]], deg),
+  rotPts([[7.6,15],[16.4,15],[16.4,16.6],[7.6,16.6]], deg),
+  rotPts([[11.1,16.6],[12.9,16.6],[12.9,19.4],[11.1,19.4]], deg)
+].map(P).join('') + (() => { const [x, y] = rotPts([[12,20.6]], deg)[0]; return circ(f1(x), f1(y), 1.3); })();
+
+/* Bunker = Spiellogo mit 63 statt RB: kursive Ziffern (Umrisse der freien Schrift Anton, OFL), Umlaufbahn und Stern. Füllregel nonzero. */
+const BUNKER_63 = 'M6.28 16.08L6.28 16.08Q5.14 16.08 4.58 15.69Q4.01 15.3 3.9 14.51Q3.79 13.72 4.03 12.55L4.03 12.55L4.62 9.58Q4.85 8.44 5.12 7.57Q5.39 6.7 5.82 6.1Q6.24 5.51 6.91 5.21Q7.57 4.9 8.58 4.9L8.58 4.9Q9.27 4.9 9.82 5.14Q10.38 5.38 10.65 5.86Q10.92 6.33 10.78 7.05L10.78 7.05L10.54 8.24L8.43 8.24L8.47 8.01Q8.53 7.74 8.55 7.46Q8.58 7.19 8.5 7.01Q8.43 6.83 8.16 6.83L8.16 6.83Q7.79 6.83 7.61 7.03Q7.42 7.23 7.35 7.61L7.35 7.61L6.91 9.81Q7.12 9.52 7.47 9.34Q7.82 9.17 8.27 9.17L8.27 9.17Q9.18 9.17 9.59 9.53Q10.01 9.9 10.05 10.62Q10.09 11.34 9.88 12.43L9.88 12.43Q9.66 13.52 9.22 14.34Q8.79 15.16 8.07 15.62Q7.36 16.08 6.28 16.08ZM6.61 14.05L6.61 14.05Q6.99 14.05 7.13 13.73Q7.27 13.4 7.38 12.89L7.38 12.89L7.55 12Q7.73 11.1 7.23 11.1L7.23 11.1Q6.65 11.1 6.49 11.88L6.49 11.88L6.22 13.24Q6.06 14.05 6.61 14.05ZM12.31 16.1L12.31 16.1Q10.86 16.1 10.35 15.33Q9.84 14.57 10.15 13.02L10.15 13.02L10.38 11.87L12.63 11.87L12.4 13.03Q12.31 13.46 12.36 13.76Q12.41 14.07 12.79 14.07L12.79 14.07Q13.18 14.07 13.35 13.74Q13.52 13.41 13.67 12.67L13.67 12.67L13.72 12.4Q13.84 11.83 13.73 11.4Q13.63 10.98 13.07 10.98L13.07 10.98Q13 10.98 12.95 10.98Q12.9 10.99 12.86 10.99L12.86 10.99L13.25 9.02Q13.82 9.02 14.17 8.77Q14.52 8.52 14.64 7.92L14.64 7.92Q14.82 7 14.29 7L14.29 7Q13.94 7 13.76 7.27Q13.59 7.54 13.5 7.96L13.5 7.96L13.44 8.29L11.17 8.29Q11.17 8.21 11.19 8.11Q11.21 8 11.23 7.9L11.23 7.9Q11.53 6.39 12.38 5.69Q13.22 4.98 14.68 4.98L14.68 4.98Q17.48 4.98 16.9 7.9L16.9 7.9Q16.74 8.71 16.41 9.24Q16.09 9.76 15.46 9.98L15.46 9.98Q15.88 10.2 16.03 10.55Q16.19 10.9 16.15 11.42Q16.12 11.93 15.97 12.67L15.97 12.67Q15.64 14.32 14.77 15.21Q13.91 16.1 12.31 16.1ZM1.54 17.73L1.74 18.04L1.98 18.35L2.25 18.64L2.55 18.92L2.87 19.18L3.22 19.42L3.6 19.65L4 19.85L4.43 20.04L4.87 20.21L5.34 20.36L5.82 20.48L6.32 20.59L6.84 20.68L7.37 20.75L7.92 20.8L8.47 20.83L9.04 20.84L9.62 20.83L10.21 20.79L10.8 20.74L11.39 20.67L11.99 20.58L12.59 20.47L13.2 20.35L13.8 20.2L14.39 20.03L14.99 19.85L15.57 19.65L16.15 19.44L16.72 19.21L17.28 18.96L17.83 18.69L18.37 18.42L18.89 18.13L19.4 17.82L19.89 17.5L20.36 17.17L20.81 16.83L21.24 16.48L21.65 16.12L22.04 15.75L22.4 15.37L22.74 14.98L23.06 14.58L23.35 14.18L23.61 13.77L23.84 13.35L24.04 12.92L24.21 12.49L24.35 12.05L24.45 11.61L24.52 11.16L24.55 10.72L24.54 10.27L24.5 9.83L24.41 9.39L24.28 8.96L24.11 8.54L23.9 8.14L23.65 7.75L23.37 7.39L23.06 7.04L22.72 6.72L22.35 6.41L21.95 6.13L21.53 5.88L21.09 5.64L20.62 5.43L20.14 5.23L19.67 5.06L18.84 7.92L19.25 8.01L19.61 8.1L19.95 8.22L20.26 8.34L20.54 8.48L20.81 8.63L21.04 8.78L21.26 8.95L21.45 9.12L21.62 9.29L21.77 9.47L21.89 9.66L22 9.86L22.08 10.06L22.15 10.28L22.2 10.5L22.23 10.74L22.24 10.99L22.22 11.25L22.18 11.53L22.12 11.82L22.02 12.12L21.91 12.43L21.76 12.75L21.58 13.07L21.38 13.4L21.15 13.73L20.89 14.06L20.61 14.39L20.3 14.73L19.97 15.05L19.61 15.38L19.23 15.7L18.83 16.01L18.41 16.31L17.96 16.61L17.51 16.9L17.03 17.17L16.54 17.43L16.04 17.68L15.52 17.92L15 18.14L14.47 18.35L13.92 18.54L13.38 18.72L12.83 18.88L12.28 19.02L11.72 19.15L11.17 19.25L10.62 19.34L10.08 19.41L9.54 19.47L9.01 19.5L8.49 19.52L7.98 19.52L7.48 19.49L6.99 19.45L6.52 19.4L6.07 19.32L5.63 19.23L5.22 19.12L4.82 19L4.45 18.86L4.09 18.7L3.76 18.53L3.45 18.34L3.17 18.15L2.91 17.94L2.68 17.72L2.47 17.48L2.28 17.22ZM19.89 3.01L20.77 4.63L22.59 4.45L21.33 5.78L22.06 7.46L20.41 6.67L19.04 7.88L19.27 6.07L17.7 5.14L19.5 4.8Z';
+
+/* Hilfen für die Feldtyp-Symbole */
+const roundRectPts = (x, y, w, h, r, n = 5) => { const c = [[x+w-r, y+r, -90], [x+w-r, y+h-r, 0], [x+r, y+h-r, 90], [x+r, y+r, 180]], out = [];
+  c.forEach(([cx, cy, a0]) => { for (let i = 0; i <= n; i++){ const a = (a0 + 90*i/n)*Math.PI/180; out.push([cx + r*Math.cos(a), cy + r*Math.sin(a)]); } }); return out; };
+const sparkle = (cx, cy, r) => polyCw(Array.from({length:8}, (_, i) => polar(cx, cy, i % 2 ? r*0.3 : r, -90 + i*45)));
+/* Space-Invader (11x8) als Pixelbild */
+const invader = (() => { const rows = ['00100000100','00010001000','00111111100','01101110110','11111111111','10111111101','10100000101','00011011000'], u = 1.9, ox = 1.55, oy = 4.4; let d = '';
+  rows.forEach((row, ry) => { const re = /1+/g; let m; while ((m = re.exec(row))) d += rectCw(f1(ox + m.index*u), f1(oy + ry*u), f1(m[0].length*u), f1(u + 0.04)); }); return d; })();
+/* Radfeld = Glücksrad aus dem Spiel: ungleich große Segmente, Nabe, Zeiger oben */
+const GR = [0, 62, 118, 196, 252, 310, 360];
+const radIcon = () => { const cx = 12, cy = 13.5; let d = circ(cx, cy, 10.4) + circ(cx, cy, 9.1, true) + circ(cx, cy, 8.0) + circ(cx, cy, 3.4, true) + circ(cx, cy, 1.7);
+  GR.slice(0, -1).forEach(a => { d += strokePoly([polar(cx, cy, 4.6, a - 90), polar(cx, cy, 8.3, a - 90)], 1.1, true); });
+  return d + P([[9.1, 0.3], [14.9, 0.3], [12, 5.0]]); };const wedgeAt = (r1, r2, a0, a1, cx, cy) => { const pts = [], n = 8; for (let i = 0; i <= n; i++){ const a = (a0 + (a1-a0)*i/n - 90)*Math.PI/180; pts.push([cx + r2*Math.cos(a), cy + r2*Math.sin(a)]); }
+  for (let i = n; i >= 0; i--){ const a = (a0 + (a1-a0)*i/n - 90)*Math.PI/180; pts.push([cx + r1*Math.cos(a), cy + r1*Math.sin(a)]); } return P(pts); };
+/* Ereignisfeld = zwei Karten (hinten schräg, vorne mit Fragezeichen) + Funkeln */
+const ereignisIcon = () => {
+  const card = (cx, cy, w, h, deg) => rotPts(roundRectPts(cx - w/2, cy - h/2, w, h, 1.6), deg, cx, cy);
+  const back = card(13.4, 11.4, 10.6, 14.6, 16), gap = card(10.8, 12.6, 12.4, 16.4, -7), front = card(10.8, 12.6, 10.6, 14.6, -7);
+  const q = rotPts(arcPts(10.8, 10.9, 2.8, 165, 405).concat([[11.1,14.3],[10.8,15.5]]), -7, 10.8, 12.6);
+  const dot = rotPts([[10.8, 18.6]], -7, 10.8, 12.6)[0];
+  return polyCw(back) + polyCcw(gap) + polyCw(front) + strokePoly(q, 2.0, true) + circ(f1(dot[0]), f1(dot[1]), 1.15, true) + sparkle(20.4, 4.2, 2.6) + sparkle(3.4, 20.8, 2.0);
+};
+
+const RB_ICONS2 = {
+  rad: radIcon(),
+  minispiel: invader,
+  ereignis: ereignisIcon(),
+  herausforderung: P([[15,0.5],[2.8,13.8],[9.6,13.8],[7.4,23.8],[21.2,8.8],[14,8.8]]),  duell: sword(-35) + sword(35),
+  'o-kirche': 'M12 5L15.5 9V13H21V21H3V13H8.5V9z' + P([[11.1,.8],[12.9,.8],[12.9,2.2],[14.4,2.2],[14.4,3.7],[12.9,3.7],[12.9,4.4],[11.1,4.4],[11.1,3.7],[9.6,3.7],[9.6,2.2],[11.1,2.2]])
+    + 'M10.4 21v-4.2a1.6 1.6 0 0 1 3.2 0V21z' + circ(12, 11.6, 1.2),
+  'o-kapelle': 'M12 3L20.5 10.5V21H3.5V10.5z'
+    + P([[11.2,7],[12.8,7],[12.8,8.6],[14.8,8.6],[14.8,10.2],[12.8,10.2],[12.8,14],[11.2,14],[11.2,10.2],[9.2,10.2],[9.2,8.6],[11.2,8.6]])
+    + 'M10 21v-3.4a2 2 0 0 1 4 0V21z',
+  /* Bunker = Zahl 63: Ziffer 6 (Ring + Bogen), Ziffer 3 (zwei Bögen) */
+  'o-bunker': BUNKER_63,
+  /* Schwimmbad: Turm mit Leiter, gerade Rutsche schräg ins Wasser, Stützen, Wellen */
+  'o-schwimmbad': rectCw(2.6, 4.2, 1.7, 10.8) + rectCw(7.6, 4.2, 1.7, 10.8) + rectCw(4.3, 7.4, 3.3, 1.4) + rectCw(4.3, 11, 3.3, 1.4) + rectCw(1.8, 2.6, 8.6, 1.7)
+    + strokePoly([[9.6, 3.9], [13.6, 6.4], [17.4, 9.8], [20.2, 12.4], [22.4, 12.9]], 2.3)
+    + strokePoly([[14.4, 7.4], [14.4, 15]], 1.3) + strokePoly([[18.8, 11.1], [18.8, 15]], 1.3)
+    + strokePoly(wave(17.6), 2.1) + strokePoly(wave(21.4), 2.1),
+  'o-sportplatz': circ(12, 12, 10.9) + circ(12, 12, 9.2, true) + polyCw(ngon(12, 12, 4.1, 5))
+    + [0,1,2,3,4].map(k => { const v = -90 + 72*k; return strokePoly([polar(12, 12, 4, v), polar(12, 12, 7.4, v)], 1.1) + polyCw([polar(12, 12, 6.6, v), polar(12, 12, 9.6, v - 21), polar(12, 12, 9.6, v + 21)]); }).join(''),
+  /* Biergarten = Löwe: Mähne (Stern), Lücke, Gesicht, Gesichtszüge als Aussparung */
+  'o-biergarten': polyCw(Array.from({length:24}, (_, i) => polar(12, 12.5, i % 2 ? 8.9 : 11, i*15 - 90))) + circ(12, 12.5, 6.9, true) + circ(12, 12.5, 5.8)
+    + circ(9.4, 11, 0.95, true) + circ(14.6, 11, 0.95, true)
+    + polyCcw([[10.2,13.3],[13.8,13.3],[12,15.3]])
+    + strokePoly([[12,15.3],[12,16.6]], 0.8, true) + strokePoly([[9.4,16.9],[10.8,17.9],[12,17.1],[13.2,17.9],[14.6,16.9]], 0.8, true)
+    + circ(5.3, 5, 2.3) + circ(18.7, 5, 2.3),
+  'o-dorflade': 'M2 3h3.2l.7 2.6H22l-2.2 8.2H8.3l.5 1.6H19v1.9H7.4L4 4.9H2z'
+    + rectCw(10.2, 7.4, 1.2, 4.4) + rectCw(13.2, 7.4, 1.2, 4.4) + rectCw(16.2, 7.4, 1.2, 4.4) + circ(9.6, 20.4, 1.9) + circ(17.6, 20.4, 1.9),
+  'o-holler': 'M6.3 2.5h11.4c.4 5.4-1.2 9.2-5.7 9.2s-6.1-3.8-5.7-9.2z' + rectCw(11, 11.2, 2, 8.6) + 'M7 19.6h10a.9.9 0 0 1 .9.9v.5a.9.9 0 0 1-.9.9H7a.9.9 0 0 1-.9-.9v-.5a.9.9 0 0 1 .9-.9z',
+  'o-kalkwerk': 'M2 21V10.5L8 14V10.5L14 14V3H18.5V14H22V21z' + rectCw(4, 16.4, 2.4, 2.4) + rectCw(9.3, 16.4, 2.4, 2.4) + rectCw(14.6, 16.4, 2.4, 2.4) + rectCw(18.4, 16.4, 2.4, 2.4),
+  'o-waldfest': 'M5.5 7H15.5a1.5 1.5 0 0 1 1.5 1.5V19.5a1.5 1.5 0 0 1-1.5 1.5H5.5a1.5 1.5 0 0 1-1.5-1.5V8.5a1.5 1.5 0 0 1 1.5-1.5z'
+    + circ(6.8, 6.2, 2.6) + circ(10.6, 5, 3.1) + circ(14.4, 6.2, 2.5)
+    + 'M17 10h2a3.2 3.2 0 0 1 3.2 3.2v2.6a3.2 3.2 0 0 1-3.2 3.2H17v-2h2a1.2 1.2 0 0 0 1.2-1.2v-2.6A1.2 1.2 0 0 0 19 12H17z'
+    + rectCcw(6.6, 11, 1.7, 7.5) + rectCcw(10.2, 11, 1.7, 7.5),
+  'o-dorfplatz': 'M2.5 9.4L12 3l9.5 6.4z' + rectCw(3, 10.2, 18, 1.6) + rectCw(4.6, 12.4, 2.3, 5.8) + rectCw(8.6, 12.4, 2.3, 5.8) + rectCw(13.1, 12.4, 2.3, 5.8) + rectCw(17.1, 12.4, 2.3, 5.8)
+    + rectCw(3, 18.8, 18, 1.5) + rectCw(1.6, 20.9, 20.8, 1.7),
+  /* Kaugummiautomat wie auf dem Beamer: Wandkasten mit Oberkante, Front mit 3 Spalten (Fenster mit Kugeln, Schlitz, Drehknopf, Klappe), Halterungen */
+  'o-kaugummi': rectCw(1.4, 1.4, 21.2, 2) + rectCw(2.4, 3.2, 19.2, 18.4) + rectCw(0.2, 9.5, 2.2, 5) + rectCw(21.6, 9.5, 2.2, 5)
+    + polyCcw([[4.2,5.2],[19.8,5.2],[19.8,19.6],[4.2,19.6]])
+    + [4.2, 9.8, 15.4].map(x => rectCw(x, 6.2, 4.4, 6.2) + circ(x + 1.5, 10.6, 0.9, true) + circ(x + 3, 9.2, 0.9, true) + circ(x + 3.1, 11.4, 0.7, true)
+        + rectCw(x + 1.5, 13.2, 1.4, 0.55) + circ(x + 2.2, 15.6, 1.5) + rectCw(x + 0.4, 17.7, 3.6, 1.2)).join(''),  portal: spiral()
+};
+const RB_ICON_RULE2 = { rad:'nonzero', minispiel:'nonzero', ereignis:'nonzero', herausforderung:'nonzero', duell:'nonzero', 'o-waldfest':'nonzero', 'o-bunker':'nonzero', 'o-schwimmbad':'nonzero', 'o-sportplatz':'nonzero', 'o-biergarten':'nonzero', 'o-kaugummi':'nonzero' };
+
+const RB_VARIANTS = {};
+
+/* Sonderfarben einzelner Orte (derzeit keine, alle Orte nutzen RB_TYPES.ort) */
+const RB_ORT_STYLE = {};
+
+/* Zeichengröße einzelner Symbole im Marker (1 = Standard, Faktor auf die Iconkante); Bunker wird größer gezeichnet */
+const RB_ICON_SCALE = { 'o-bunker': 1.25, herausforderung: 1.3, duell: 1.25, minispiel: 1.4, rad: 1.2, ereignis: 1.25 };
+return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
+})();
+  const BOARD_PORTALS = [36, 46, 97];   // 2.3.76: Sackgassen der neuen Karte (Dorfladen, Feld 46, Feld 97), auf der Karte mit dem Wirbel markiert
   function applyBoardPortals(board){
     if(!board || !Array.isArray(board.felder)) return;
     const byNr = {}; board.felder.forEach(f=>{ byNr[f.nr] = f; });
@@ -2126,12 +2274,12 @@ window.addEventListener('unhandledrejection', function(e){
     const def = freshDefaultState();
     if(!state.players || !state.players.length) state.players = def.players;
     if(!state.board || !Array.isArray(state.board.felder) || !state.board.felder.length){ state.board = JSON.parse(JSON.stringify(DEFAULT_BOARD)); }
-    // Neue Karte (2.3.68, 102 Felder): alte Spielstände bekommen die neue Karte, die Figuren stehen danach am Start (Bunker),
-    // weil die Feldnummern der alten Karte (147 Felder) nicht mehr passen.
-    if((state.boardVer||0) < 2){
+    // Neue Karte (2.3.76, 97 Felder mit Kalkwerk): alte Spielstände bekommen die neue Karte, die Figuren stehen danach am Start (Bunker),
+    // weil die Feldnummern der alten Karte (102 Felder) nicht mehr passen.
+    if((state.boardVer||0) < 4){
       state.board = JSON.parse(JSON.stringify(DEFAULT_BOARD));
       state.players.forEach(p=>{ p.fieldNr = BOARD_START_FIELD; p.fieldHistory = []; });
-      state.boardVer = 2;
+      state.boardVer = 4;
     }
     if(typeof state.boardAutoMode!=='boolean') state.boardAutoMode = false;
     state.players.forEach(p=>{
@@ -3628,7 +3776,7 @@ window.addEventListener('unhandledrejection', function(e){
     taxiOrt = null;
     wheelRotation = 0;
     glueckSubChoice = null; glueckWheelId = null; glueckPickOpen = false;
-    pgSetup = null; if(state && state.playGame){ state.playGame = null; }
+    pgSetup = null; pgReturn = null; if(state && state.playGame){ state.playGame = null; }
     ortAutoCharged.clear();
     ortChargedAmounts = {};
     bembelPartnerId = null; bembelStage = null;
@@ -4577,6 +4725,8 @@ window.addEventListener('unhandledrejection', function(e){
   function pgHashKm(km){ return km<10 ? Math.round(km*10)/10 : Math.round(km); }
 
   let pgSetup = null, pgTimerIv = null, pgLocalAudio = null;
+  // 2.3.74: Rückkehr-Info, wenn ein im Pad spielbares Spiel aus Duell, Herausforderung, Dorfplatz/Sportplatz oder Turnier gestartet wurde
+  let pgReturn = null;
   function pgPlayers(){ return (state.playGame.players||[]).map(playerById).filter(Boolean); }
   function pgScoresArr(){ return pgPlayers().map(p=>({name:p.name, color:p.color, score:(state.playGame.scores[p.id]||0)})); }
   function pgRanked(){
@@ -4627,7 +4777,7 @@ window.addEventListener('unhandledrejection', function(e){
       <div style="display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 12px;">${pgPlayers().map(p=>`<span class="swap-note" style="margin:0; padding:3px 9px;">${teamDot(p)}${escapeHtml(p.name)}: <b>${g.scores[p.id]||0}</b></span>`).join('')}</div>`;
   }
   function pgAbortBtn(){ return `<div style="margin-top:14px;"><button class="pill-btn subtle" id="pgAbort">Spiel abbrechen</button></div>`; }
-  function pgWireAbort(panel){ const b = panel.querySelector('#pgAbort'); if(b) b.addEventListener('click', ()=>{ showConfirm('Spiel wirklich abbrechen? Die Punkte gehen verloren.', ()=>{ clearInterval(pgTimerIv); pgTimerIv=null; state.playGame = null; pgSetup = null; scheduleSave(); bcast('base', {}); pgRender(); }, null, 'Abbrechen', 'Weiterspielen'); }); }
+  function pgWireAbort(panel){ const b = panel.querySelector('#pgAbort'); if(b) b.addEventListener('click', ()=>{ showConfirm('Spiel wirklich abbrechen? Die Punkte gehen verloren.', ()=>{ clearInterval(pgTimerIv); pgTimerIv=null; state.playGame = null; pgSetup = null; scheduleSave(); bcast('base', {}); if(!pgBackToOrigin()) pgRender(); }, null, 'Abbrechen', 'Weiterspielen'); }); }
 
   // ---------- Start / Setup ----------
   function pgOpenSetup(mgId){
@@ -4635,6 +4785,30 @@ window.addEventListener('unhandledrejection', function(e){
     pgSetup = {key:G.key, mgId, players:state.players.map(p=>p.id), rounds:G.defRounds, opts:{cats:null, list:'laender', dur:(G.key==='tabu'?60:90), level:'gemischt', per:1}};
     pgRender();
   }
+  // 2.3.74: Spiele, die im Pad gespielt werden können, auch bei Duell, Herausforderung, Dorfplatz/Sportplatz und Turnier starten.
+  // ctx = { players:[ids], onResult(ranked) – übernimmt das Ergebnis (z. B. Sieger:in), after() – optional, z. B. Turnier-Fenster wieder öffnen }
+  function pgCanPlay(game){ return !!(game && game.id && PG_GAMES[game.id]); }
+  function pgPlayBtn(game, cls){ return pgCanPlay(game) ? `<button class="pill-btn ghost pg-play-btn ${cls}" style="margin-left:6px; padding:5px 12px; font-size:11.5px;">▶ Hier spielen</button>` : ''; }
+  function pgLaunch(game, ctx){
+    if(!pgCanPlay(game)) return;
+    pgReturn = Object.assign({prevFlow:flowChoice}, ctx);
+    const tm = document.getElementById('tournamentModal'); if(tm) tm.classList.remove('open');
+    const rb = document.querySelector('.rail-btn[data-view="view-flow"]'); if(rb) rb.click();
+    flowChoice = 'minispiel'; diceRolled = true;
+    pgOpenSetup(game.id);
+    if(pgSetup && ctx.players && ctx.players.length){ pgSetup.players = ctx.players.slice(); }
+    pgRender();
+  }
+  // Zurück an die Stelle, von der das Spiel gestartet wurde (Duell, Herausforderung, Dorfplatz, Turnier)
+  function pgBackToOrigin(){
+    const r = pgReturn; pgReturn = null; if(!r) return false;
+    flowChoice = r.prevFlow; diceRolled = true;
+    renderFlow();
+    if(r.after){ try{ r.after(); }catch(e){} }
+    return true;
+  }
+  // Sieger:in eines 1-gegen-1-Spiels aus der Rangliste (nur bei klarem Sieg, sonst null)
+  function pgDuelWinner(ranked){ const top = ranked.filter(r=>r.rank===1); return top.length===1 ? top[0].p.id : null; }
   function renderPgSetup(panel){
     const S = pgSetup, G = PG_BY_KEY[S.key];
     const chk = (id,label,on,cls)=>`<label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; margin:4px 0; cursor:pointer;"><input type="checkbox" class="${cls}" data-id="${escapeAttr(id)}" ${on?'checked':''} style="width:17px; height:17px;"> ${label}</label>`;
@@ -4669,7 +4843,7 @@ window.addEventListener('unhandledrejection', function(e){
     panel.querySelectorAll('.pg-list').forEach(c=>c.addEventListener('change', ()=>{ S.opts.list = c.value; }));
     const bind = (cls,fn)=>{ const e = panel.querySelector('.'+cls); if(e) e.addEventListener('change', ()=>fn(e.value)); };
     bind('pg-rounds', v=>{ S.rounds = parseInt(v,10); }); bind('pg-dur', v=>{ S.opts.dur = parseInt(v,10); }); bind('pg-per', v=>{ S.opts.per = parseInt(v,10); }); bind('pg-level', v=>{ S.opts.level = v; });
-    panel.querySelector('#pgSetupCancel').addEventListener('click', ()=>{ pgSetup = null; pgRender(); });
+    panel.querySelector('#pgSetupCancel').addEventListener('click', ()=>{ pgSetup = null; if(!pgBackToOrigin()) pgRender(); });
     panel.querySelector('#pgSetupStart').addEventListener('click', ()=>pgStart());
   }
   function pgStart(){
@@ -4737,16 +4911,25 @@ window.addEventListener('unhandledrejection', function(e){
       <h3 style="margin:0 0 4px; font-size:16px; font-weight:800;">${G.ico} ${escapeHtml(G.label)} – Ergebnis</h3>
       <p class="desc">${ranked.length ? 'Sieg: <b>'+ranked.filter(r=>r.rank===1).map(r=>escapeHtml(r.p.name)).join(' &amp; ')+'</b>' : ''}</p>
       <div class="rank-list" style="margin-bottom:12px;">${ranked.map(r=>`<div class="rank-row"><div class="rank-num">${r.rank}</div><div class="rank-name">${teamDot(r.p)}${escapeHtml(r.p.name)}</div><div class="rank-hash-preview">${r.score} Punkt${r.score===1?'':'e'}</div></div>`).join('')}</div>
-      <p class="desc">Mit „Hash vergeben“ wird die Reihenfolge in die Minispiel-Wertung übernommen (Hash nach Platz). Gleichstand-Reihenfolge kannst du dort noch ändern.</p>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;"><button class="pill-btn" id="pgToHash">Hash vergeben</button><button class="pill-btn subtle" id="pgEnd">Beenden ohne Hash</button></div>`;
-    panel.querySelector('#pgToHash').addEventListener('click', ()=>{
+      ${pgReturn
+        ? `<p class="desc">${ranked.filter(r=>r.rank===1).length===1 || (pgReturn.players && pgReturn.players.length>2) ? 'Das Ergebnis wird dort übernommen, wo du das Spiel gestartet hast.' : 'Unentschieden: Dort musst du die Sieger:in selbst wählen.'}</p>
+           <div style="display:flex; gap:10px; flex-wrap:wrap;"><button class="pill-btn" id="pgTakeResult">✓ Ergebnis übernehmen</button><button class="pill-btn subtle" id="pgEnd">Zurück ohne Ergebnis</button></div>`
+        : `<p class="desc">Mit „Hash vergeben“ wird die Reihenfolge in die Minispiel-Wertung übernommen (Hash nach Platz). Gleichstand-Reihenfolge kannst du dort noch ändern.</p>
+           <div style="display:flex; gap:10px; flex-wrap:wrap;"><button class="pill-btn" id="pgToHash">Hash vergeben</button><button class="pill-btn subtle" id="pgEnd">Beenden ohne Hash</button></div>`}`;
+    const takeBtn = panel.querySelector('#pgTakeResult');
+    if(takeBtn) takeBtn.addEventListener('click', ()=>{
+      const r = pgReturn; try{ if(r && r.onResult) r.onResult(ranked); }catch(e){}
+      state.playGame = null; scheduleSave(); bcast('base', {}); if(!pgBackToOrigin()) pgRender();
+    });
+    const toHashBtn = panel.querySelector('#pgToHash');
+    if(toHashBtn) toHashBtn.addEventListener('click', ()=>{
       const exclude = {}; const order = ranked.map(r=>r.p.id);
       ranked.forEach((r,i)=>{ if(i>0 && r.rank===ranked[i-1].rank) exclude['~'+r.p.id] = true; });
       state.players.forEach(p=>{ if(!order.includes(p.id)){ order.push(p.id); exclude[p.id] = true; } });
       lastMinigame = MINIGAMES_BY_ID[g.mgId] || lastMinigame; msRangOrder = order; msRangExcluded = exclude;
       state.playGame = null; scheduleSave(); bcast('base', {}); pgRender();
     });
-    panel.querySelector('#pgEnd').addEventListener('click', ()=>{ state.playGame = null; scheduleSave(); bcast('base', {}); pgRender(); });
+    panel.querySelector('#pgEnd').addEventListener('click', ()=>{ state.playGame = null; scheduleSave(); bcast('base', {}); if(!pgBackToOrigin()) pgRender(); });
   }
 
   // ---------- Geräusche raten ----------
@@ -5521,7 +5704,7 @@ window.addEventListener('unhandledrejection', function(e){
     pairs.forEach((pair, idx)=>{
       const [a,b] = pair;
       const card = document.createElement('div'); card.className='pair-card';
-      card.innerHTML = `<div class="pair-title">Paar ${idx+1}</div>
+      card.innerHTML = `<div class="pair-title">Paar ${idx+1} ${pgPlayBtn(duelGame,'duel-pg-play')}</div>
         <div class="winner-pick">
           <button data-w="${a.id}" class="${duelWinners[idx]===a.id?'active':''}">${teamDot(a)}${escapeHtml(a.name)} gewinnt</button>
           <button data-w="${b.id}" class="${duelWinners[idx]===b.id?'active':''}">${teamDot(b)}${escapeHtml(b.name)} gewinnt</button>
@@ -5529,6 +5712,8 @@ window.addEventListener('unhandledrejection', function(e){
       card.querySelectorAll('.winner-pick button').forEach(btn=>{
         btn.addEventListener('click', ()=>{ duelWinners[idx]=btn.dataset.w; renderDuellfeld(panel); });
       });
+      const duelPlay = card.querySelector('.duel-pg-play');
+      if(duelPlay) duelPlay.addEventListener('click', ()=>pgLaunch(duelGame, {players:[a.id,b.id], onResult:(ranked)=>{ const w = pgDuelWinner(ranked); if(w) duelWinners[idx] = w; else showAlert('Unentschieden – bitte wähle die Sieger:in selbst.'); }}));
       wrap.appendChild(card);
     });
     document.getElementById('duelApplyBtn').addEventListener('click', ()=>{
@@ -5722,7 +5907,7 @@ window.addEventListener('unhandledrejection', function(e){
       ${jointStakeHtml(cp, target, herJoint, 'her-joint')}
       <div style="margin:12px 0;">
         ${herGame
-          ? `<p class="desc">Gespielt wird: <b>${escapeHtml(herGame.name)}</b>${herGame.desc?` <span style="color:var(--text-faint);">– ${escapeHtml(herGame.desc)}</span>`:''} <button class="pill-btn subtle" id="herGameReroll" style="margin-left:6px; padding:5px 12px; font-size:11.5px;">🎲 anderes Spiel</button></p>`
+          ? `<p class="desc">Gespielt wird: <b>${escapeHtml(herGame.name)}</b>${herGame.desc?` <span style="color:var(--text-faint);">– ${escapeHtml(herGame.desc)}</span>`:''} <button class="pill-btn subtle" id="herGameReroll" style="margin-left:6px; padding:5px 12px; font-size:11.5px;">🎲 anderes Spiel</button>${pgPlayBtn(herGame,'her-pg-play')}</p>`
           : `<button class="pill-btn ghost" id="herGameDraw">🎲 Zufälliges Spiel auswählen</button>`}
       </div>
       <div class="winner-pick" id="herWinnerPick"></div>
@@ -5750,6 +5935,8 @@ window.addEventListener('unhandledrejection', function(e){
     };
     const drawBtn = document.getElementById('herGameDraw'); if(drawBtn) drawBtn.addEventListener('click', drawGame);
     const rerollBtn = document.getElementById('herGameReroll'); if(rerollBtn) rerollBtn.addEventListener('click', drawGame);
+    const herPlay = document.querySelector('.her-pg-play');
+    if(herPlay) herPlay.addEventListener('click', ()=>pgLaunch(herGame, {players:[cp.id,target.id], onResult:(ranked)=>{ const w = pgDuelWinner(ranked); if(w) herWinner = w; else showAlert('Unentschieden – bitte wähle die Sieger:in selbst.'); }}));
     const pickWrap = document.getElementById('herWinnerPick');
     if(!herWinner) herWinner = cp.id;
     pickWrap.innerHTML = `<button data-w="${cp.id}" class="${herWinner===cp.id?'active':''}">${teamDot(cp)}${escapeHtml(cp.name)} gewinnt</button><button data-w="${target.id}" class="${herWinner===target.id?'active':''}">${teamDot(target)}${escapeHtml(target.name)} gewinnt</button>`;
@@ -6084,7 +6271,7 @@ window.addEventListener('unhandledrejection', function(e){
         const active = dorfRangOrder.filter(id=>!dorfRangExcluded[id]);
         const toastEligible = active.filter(id=>{ const p=playerById(id); return p && p.inventory.includes('Klosterberg Toast'); });
         const tatarEligible = active.filter(id=>{ const p=playerById(id); return p && p.inventory.includes('Tatar'); });
-        wrap.innerHTML = `<h4 style="margin:14px 0 8px; font-size:13px; font-weight:800; color:var(--text-soft);">Ergebnis eintragen</h4>
+        wrap.innerHTML = `${pgCanPlay(dorfMinigame) ? `<p style="margin:10px 0 0;">${pgPlayBtn(dorfMinigame,'dorf-t-play').replace('margin-left:6px;','')}</p>` : ''}<h4 style="margin:14px 0 8px; font-size:13px; font-weight:800; color:var(--text-soft);">Ergebnis eintragen</h4>
           ${buildRanglisteHtml(dorfRangOrder, dorfRangExcluded)}
           ${(toastEligible.length || tatarEligible.length) ? `
             <div style="margin:10px 0; padding:12px 14px; background:var(--surface-alt); border-radius:12px;">
@@ -6103,6 +6290,13 @@ window.addEventListener('unhandledrejection', function(e){
           ` : ''}
           <button class="pill-btn" id="dorfApplyBtn" style="margin-top:8px;">Turnier abschließen</button>`;
         wireRanglisteEvents(wrap, dorfRangOrder, dorfRangExcluded, renderDorfRang);
+        const dorfTPlay = wrap.querySelector('.dorf-t-play');
+        if(dorfTPlay) dorfTPlay.addEventListener('click', ()=>pgLaunch(dorfMinigame, {players:state.players.map(p=>p.id), onResult:(ranked)=>{
+          const order = ranked.map(r=>r.p.id), exc = {};
+          ranked.forEach((r,i)=>{ if(i>0 && r.rank===ranked[i-1].rank) exc['~'+r.p.id] = true; });
+          state.players.forEach(p=>{ if(!order.includes(p.id)){ order.push(p.id); exc[p.id] = true; } });
+          dorfRangOrder = order; dorfRangExcluded = exc;
+        }}));
         wrap.querySelectorAll('.dorf-toast-chk').forEach(chk=>{ chk.addEventListener('change', ()=>{ chk.checked?dorfToastUsers.add(chk.dataset.id):dorfToastUsers.delete(chk.dataset.id); }); });
         wrap.querySelectorAll('.dorf-tatar-chk').forEach(chk=>{
           chk.addEventListener('change', ()=>{
@@ -6168,7 +6362,7 @@ window.addEventListener('unhandledrejection', function(e){
           ${jointStakeHtml(cp, target, dorfHerJoint, 'dorf-joint')}
           <div style="margin:12px 0;">
             ${dorfHerGame
-              ? `<p class="desc">Gespielt wird: <b>${escapeHtml(dorfHerGame.name)}</b>${dorfHerGame.desc?` <span style="color:var(--text-faint);">– ${escapeHtml(dorfHerGame.desc)}</span>`:''} <button class="pill-btn subtle" id="dorfHerGameReroll" style="margin-left:6px; padding:5px 12px; font-size:11.5px;">🎲 anderes Spiel</button></p>`
+              ? `<p class="desc">Gespielt wird: <b>${escapeHtml(dorfHerGame.name)}</b>${dorfHerGame.desc?` <span style="color:var(--text-faint);">– ${escapeHtml(dorfHerGame.desc)}</span>`:''} <button class="pill-btn subtle" id="dorfHerGameReroll" style="margin-left:6px; padding:5px 12px; font-size:11.5px;">🎲 anderes Spiel</button>${pgPlayBtn(dorfHerGame,'dorf-pg-play')}</p>`
               : `<button class="pill-btn ghost" id="dorfHerGameDraw">🎲 Zufälliges Spiel auswählen</button>`}
           </div>
           <div class="winner-pick" id="dorfWinnerPick"></div>
@@ -6202,6 +6396,8 @@ window.addEventListener('unhandledrejection', function(e){
         };
         const drawBtn = document.getElementById('dorfHerGameDraw'); if(drawBtn) drawBtn.addEventListener('click', drawGame);
         const rerollBtn = document.getElementById('dorfHerGameReroll'); if(rerollBtn) rerollBtn.addEventListener('click', drawGame);
+        const dorfPlay = document.querySelector('.dorf-pg-play');
+        if(dorfPlay) dorfPlay.addEventListener('click', ()=>pgLaunch(dorfHerGame, {players:[cp.id,target.id], onResult:(ranked)=>{ const w = pgDuelWinner(ranked); if(w) dorfHerWinner = w; else showAlert('Unentschieden – bitte wähle die Sieger:in selbst.'); }}));
         if(!dorfHerWinner) dorfHerWinner = cp.id;
         const pickWrap = document.getElementById('dorfWinnerPick');
         pickWrap.innerHTML = `<button data-w="${cp.id}" class="${dorfHerWinner===cp.id?'active':''}">${teamDot(cp)}${escapeHtml(cp.name)} gewinnt</button><button data-w="${target.id}" class="${dorfHerWinner===target.id?'active':''}">${teamDot(target)}${escapeHtml(target.name)} gewinnt</button>`;
@@ -6562,6 +6758,23 @@ window.addEventListener('unhandledrejection', function(e){
     const openBtn = document.getElementById('beamerOpenBtn');
     if(openBtn) openBtn.setAttribute('href', beamerUrl());
   })();
+  // ---------- Legende der Karte (Icons wie auf dem Ausdruck) ----------
+  (function(){
+    const modal = document.getElementById('legendModal'), body = document.getElementById('legendBody');
+    function svg(key, size, ink){ const k = Math.round(size*(RB_ICON_SCALE[key]||1)); return `<svg viewBox="0 0 24 24" width="${k}" height="${k}" aria-hidden="true" style="flex:none;"><path d="${RB_ICONS2[key]}" fill="${ink}" fill-rule="${RB_ICON_RULE2[key]||'evenodd'}"/></svg>`; }
+    function badge(st, key, size){
+      return `<span style="flex:none; display:inline-flex; align-items:center; justify-content:center; width:${size}px; height:${size}px; border-radius:50%; overflow:hidden; background:${st.fill}; border:3px solid ${st.ring}; box-shadow:0 2px 6px rgba(0,0,0,.3);">${key?svg(key, Math.round(size*0.58), st.ink):''}</span>`;
+    }
+    function build(){
+      const rows = ['rad','minispiel','ereignis','herausforderung','duell','leer'].map(id=>{ const t = RB_TYPES[id]; return `<div style="display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--sep);">${badge(t, id==='leer'?null:id, 44)}<div><b>${t.name}</b><div class="desc" style="margin:2px 0 0;">${t.info}</div></div></div>`; }).join('');
+      const orte = Object.keys(RB_ORTE).map(id=>`<div style="display:flex; align-items:center; gap:10px; padding:6px 0;">${badge(RB_ORT_STYLE[id] || RB_TYPES.ort, id, 44)}<span>${RB_ORTE[id]}</span></div>`).join('');
+      const portal = `<div style="display:flex; align-items:center; gap:12px; padding:8px 0;">${badge({fill:'#1D3322', ring:'#D4AF37', ink:'#E8CE6B'}, 'portal', 44)}<div><b>Sprung</b><div class="desc" style="margin:2px 0 0;">An den drei Sackgassen (Dorfladen und die Felder 46 und 97): statt umzudrehen zu einer der beiden anderen springen. Ein Sprung zählt als ein Feld.</div></div></div>`;
+      body.innerHTML = `<h4 style="margin:6px 0 2px; font-size:14px;">Felder</h4>${rows}<h4 style="margin:16px 0 2px; font-size:14px;">Orte</h4><div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); column-gap:14px;">${orte}</div><h4 style="margin:16px 0 2px; font-size:14px;">Sprung</h4>${portal}`;
+    }
+    document.getElementById('legendBtn').addEventListener('click', ()=>{ build(); modal.classList.add('open'); });
+    document.getElementById('legendClose').addEventListener('click', ()=>modal.classList.remove('open'));
+    modal.addEventListener('click', e=>{ if(e.target===modal) modal.classList.remove('open'); });
+  })();
   const beamerLinkModal = document.getElementById('beamerLinkModal');
   document.getElementById('beamerLinkBtn').addEventListener('click', ()=>{
     const url = beamerUrl();
@@ -6690,7 +6903,7 @@ window.addEventListener('unhandledrejection', function(e){
     updHint();
   }
   // Dauer-Schätzung (Balancing 2.3.67): Rundenzahlen aus der Simulation (Anführer erreicht 300/500 Hash bzw. 1/2/3 Joints nach n Runden,
-  // je Spielerzahl 2–8). Zeitbedarf: ~0,75 min pro Zug, ~5 min pro Minispiel, 19 von 102 Feldern sind Minispiele (BOARD_MINIGAME_SHARE, anpassbare Annahmen).
+  // je Spielerzahl 2–8). Zeitbedarf: ~0,75 min pro Zug, ~5 min pro Minispiel, 19 von 97 Feldern sind Minispiele (BOARD_MINIGAME_SHARE, anpassbare Annahmen).
   // Die Simulation spielt zielstrebig (Joint-Jagd); echte Gruppen brauchen eher etwas länger.
   const NG_PRESETS = { rounds:[['Kurz',10],['Mittel',15],['Lang',20]], joints:[['Kurz',1],['Mittel',2],['Lang',3]], hash:[['Kurz',200],['Mittel',300],['Lang',450]] };
   const NG_ROUNDS_TO_300 = {2:13.8, 3:10.8, 4:11.2, 5:10.3, 6:9.3, 7:8.6, 8:8.0};
@@ -6981,6 +7194,7 @@ window.addEventListener('unhandledrejection', function(e){
           <div style="font-size:12px; font-weight:700; color:var(--text-faint); text-transform:uppercase;">${escapeHtml(tourMatchLabel(m))} · ${escapeHtml(g.name)}</div>
           <div style="font-size:16px; margin:6px 0;">${nm(A,m.a)} <span style="color:var(--text-faint);">vs</span> ${nm(B,m.b)}</div>
           ${isCur ? `<div class="sub" style="margin-bottom:8px;">${escapeHtml(g.desc)}</div>
+            ${pgCanPlay(MINIGAMES_BY_ID[m.gameId]) ? `<button class="pill-btn ghost" data-tour="play" data-i="${i}" style="margin-bottom:10px;">▶ Hier spielen</button>` : ''}
             <div class="winner-pick" style="margin-bottom:0;"><button data-tour="win" data-i="${i}" data-id="${m.a}">${teamDot(A)}${escapeHtml(A?A.name:'')} gewinnt</button><button data-tour="win" data-i="${i}" data-id="${m.b}">${teamDot(B)}${escapeHtml(B?B.name:'')} gewinnt</button></div>` : ''}
         </div>`;
       }).join('');
@@ -6990,6 +7204,7 @@ window.addEventListener('unhandledrejection', function(e){
       title.textContent = '🎮 Mega-Spiel';
       const g = tourGame(t.mega.gameId);
       html = `<div class="result-banner"><div class="big">${escapeHtml(g.name)}</div><div class="sub">${escapeHtml(g.desc)}</div></div>
+        ${(!t.mega.order.length && pgCanPlay(MINIGAMES_BY_ID[t.mega.gameId])) ? `<button class="pill-btn ghost" data-tour="playmega" style="margin-top:8px;">▶ Hier spielen</button>` : ''}
         <h4 style="margin:16px 0 8px; font-size:14px; font-weight:800; color:var(--text-soft);">Platzierung eintragen – tippe der Reihe nach 1., 2., 3. …</h4>
         <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">${t.ids.filter(id=>!t.mega.order.includes(id)).map(id=>{ const pl=playerById(id); return `<button class="pill-btn ghost" data-tour="pick" data-id="${id}">${teamDot(pl)}${escapeHtml(pl?pl.name:'')}</button>`; }).join('')}</div>
         ${t.mega.order.length ? t.mega.order.map((id,i)=>{ const pl=playerById(id); return `<div class="swap-note">#${i+1} ${teamDot(pl)}<b>${escapeHtml(pl?pl.name:'')}</b></div>`; }).join('') : ''}`;
@@ -7022,6 +7237,13 @@ window.addEventListener('unhandledrejection', function(e){
         else if(act==='next') tourStep(()=>tourDrawRound());
         else if(act==='win') tourStep(()=>tourSetWinner(parseInt(btn.dataset.i,10), btn.dataset.id));
         else if(act==='pick') tourStep(()=>tourMegaPick(btn.dataset.id));
+        else if(act==='play'){
+          const i = parseInt(btn.dataset.i,10), m = t.matches[i]; if(!m) return;
+          pgLaunch(MINIGAMES_BY_ID[m.gameId], {players:[m.a,m.b], after:()=>openTournamentModal(), onResult:(ranked)=>{ const w = pgDuelWinner(ranked); if(w) tourStep(()=>tourSetWinner(i, w)); else showAlert('Unentschieden – bitte im Turnier-Fenster die Sieger:in selbst wählen.'); }});
+        }
+        else if(act==='playmega'){
+          pgLaunch(MINIGAMES_BY_ID[t.mega.gameId], {players:t.ids.slice(), after:()=>openTournamentModal(), onResult:(ranked)=>{ ranked.forEach(r=>{ if(!t.mega.order.includes(r.p.id)) tourStep(()=>tourMegaPick(r.p.id)); }); }});
+        }
         else if(act==='undo') tourStep(()=>tourUndo());
         else if(act==='apply') tourStep(()=>tourApply());
         else if(act==='close') endTournament();
