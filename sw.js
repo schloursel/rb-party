@@ -1,6 +1,6 @@
 // RB-Party Service Worker – macht die App offline startbar.
 // Bei jeder neuen Version der App VERSION erhöhen, damit alte Dateien ersetzt werden.
-const VERSION = 'rbparty-v2.3.105';
+const VERSION = 'rbparty-v2.3.106';
 const APP_FILES = [
   './',
   'index.html',
@@ -18,7 +18,8 @@ const APP_FILES = [
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(VERSION).then(cache => cache.addAll(APP_FILES)).then(() => self.skipWaiting())
+    // cache: 'reload' umgeht den HTTP-Cache des Browsers (GitHub Pages cached ca. 10 Min.), sonst landet evtl. die alte Datei im neuen Cache
+    caches.open(VERSION).then(cache => Promise.all(APP_FILES.map(f => fetch(new Request(f, { cache: 'reload' })).then(res => { if (!res.ok) { if (f === 'index.html') throw new Error(f); return; } return cache.put(f, res); })))).then(() => self.skipWaiting())
   );
 });
 
@@ -50,10 +51,18 @@ self.addEventListener('fetch', event => {
 
   if (url.origin !== location.origin) return;
 
-  // Seitenaufrufe (auch ?beamer=1): immer die gecachte index.html, sonst Netz
+  // Seitenaufrufe (auch ?beamer=1): zuerst das Netz (max. 3 s, damit neue Versionen sofort erscheinen), sonst die gecachte index.html (offline)
   if (req.mode === 'navigate' && !/charakter-(editor|test|prototypen)\.html$/.test(url.pathname)) {
     event.respondWith(
-      caches.match('index.html').then(hit => hit || fetch(req))
+      Promise.race([
+        fetch('index.html', { cache: 'no-cache' }).then(res => {
+          if (!res || !res.ok) throw new Error('net');
+          const copy = res.clone();
+          caches.open(VERSION).then(c => c.put('index.html', copy));
+          return res;
+        }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 3000))
+      ]).catch(() => caches.match('index.html').then(hit => hit || fetch(req)))
     );
     return;
   }
