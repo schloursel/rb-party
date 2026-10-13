@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RB-Party Charakter-Editor</title>
+<style>
+  :root{
+    --bg:#F5F5F7; --surface:#FFFFFF; --alt:#EBEBEE; --sep:#D8D8DC;
+    --text:#1D1D1F; --soft:#6E6E73; --accent:#3D8B44; --accent-rgb:61,139,68; --on-accent:#fff;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0B0D0E; --surface:#141718; --alt:#1E2224; --sep:#2E3436; --text:#F5F5F7; --soft:#98989D; --accent:#5FBF62; --accent-rgb:95,191,98; --on-accent:#0B0D0E; }
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; }
+  body{ background:var(--bg); color:var(--text); font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  header{ padding:14px 20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; border-bottom:1px solid var(--sep); background:var(--surface); }
+  header h1{ font-size:18px; margin:0; flex:1; }
+  button{ font:inherit; color:inherit; cursor:pointer; }
+  .btn{ border:1px solid var(--sep); background:var(--alt); border-radius:10px; padding:8px 12px; font-weight:600; }
+  .btn:hover{ border-color:var(--accent); }
+  .btn.primary{ background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
+  .btn.danger:hover{ border-color:#C0392B; color:#C0392B; }
+  .btn.small{ padding:5px 9px; font-size:13px; }
+  main{ display:grid; grid-template-columns:240px minmax(0,1fr) 340px; gap:16px; padding:16px; max-width:1320px; margin:0 auto; align-items:start; }
+  .panel{ background:var(--surface); border:1px solid var(--sep); border-radius:16px; padding:14px; }
+  .panel h2{ font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--soft); margin:0 0 10px; }
+  /* Liste */
+  .clist{ display:flex; flex-direction:column; gap:6px; max-height:56vh; overflow-y:auto; margin-bottom:10px; }
+  .citem{ display:flex; align-items:center; gap:10px; padding:6px; border-radius:12px; border:2px solid transparent; background:var(--alt); text-align:left; width:100%; }
+  .citem.on{ border-color:var(--accent); }
+  .citem .thumb{ width:44px; height:48px; border-radius:8px; flex:none; overflow:hidden; }
+  .citem b{ display:block; font-size:14px; line-height:1.2; }
+  .citem small{ color:var(--soft); font-size:12px; }
+  .row{ display:flex; gap:6px; flex-wrap:wrap; }
+  /* Editor-Mitte */
+  .tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .tab{ border:1px solid var(--sep); background:var(--alt); border-radius:100px; padding:7px 14px; font-weight:600; font-size:14px; }
+  .tab.on{ background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(84px,1fr)); gap:8px; margin-bottom:16px; }
+  .opt{ border:2px solid transparent; background:var(--alt); border-radius:12px; padding:4px; display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .opt.on{ border-color:var(--accent); background:rgba(var(--accent-rgb),.12); }
+  .opt .t{ width:100%; aspect-ratio:1/0.9; background:#C9D6DC; border-radius:8px; overflow:hidden; display:flex; }
+  .opt .t svg{ width:100%; height:100%; }
+  .opt span{ font-size:11.5px; color:var(--soft); text-align:center; line-height:1.15; min-height:2.3em; display:flex; align-items:center; }
+  .slider{ margin:0 0 12px; }
+  .slider label{ display:flex; justify-content:space-between; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--soft); margin-bottom:4px; }
+  .slider input{ width:100%; accent-color:var(--accent); }
+  .colors h3{ font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--soft); margin:0 0 8px; }
+  .ctabs{ display:flex; gap:6px; margin-bottom:8px; }
+  .swatches{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+  .sw{ width:30px; height:30px; border-radius:50%; border:2px solid var(--sep); padding:0; }
+  .sw.on{ outline:3px solid var(--accent); outline-offset:1px; }
+  input[type=color]{ width:36px; height:30px; padding:0; border:none; background:none; cursor:pointer; }
+  /* Vorschau */
+  .stage{ border-radius:14px; aspect-ratio:1/1.05; overflow:hidden; display:flex; align-items:flex-end; justify-content:center; margin-bottom:10px; }
+  .stage svg{ width:92%; height:auto; display:block; }
+  label.f{ display:block; font-size:12px; font-weight:700; color:var(--soft); margin:10px 0 4px; }
+  input[type=text],textarea{ width:100%; border:1px solid var(--sep); background:var(--alt); color:var(--text); border-radius:10px; padding:9px 10px; font:inherit; }
+  textarea{ resize:vertical; min-height:72px; }
+  select{ width:100%; border:1px solid var(--sep); background:var(--alt); color:var(--text); border-radius:10px; padding:8px 10px; font:inherit; }
+  #gridTitle .btn{ text-transform:none; letter-spacing:0; }
+  .bg-row{ display:flex; gap:6px; margin-top:4px; }
+  .note{ font-size:12.5px; color:var(--soft); margin:8px 0 0; }
+  .bonus-box{ margin-top:6px; padding:10px; border-radius:12px; background:rgba(var(--accent-rgb),.1); border:1px dashed var(--accent); }
+  @media (max-width: 1000px){
+    main{ grid-template-columns:1fr; }
+    .clist{ flex-direction:row; max-height:none; overflow-x:auto; }
+    .citem{ width:auto; min-width:150px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎭 RB-Party · Charakter-Editor <small id="ver" style="font-weight:400;font-size:12px;color:var(--soft)"></small></h1>
+  <button class="btn" id="btnImport">Importieren</button>
+  <button class="btn primary" id="btnExport">Alle exportieren (charaktere.json)</button>
+  <input type="file" id="fileImport" accept="application/json,.json" hidden>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Meine Charaktere</h2>
+    <div class="clist" id="list"></div>
+    <div class="row">
+      <button class="btn small primary" id="btnNew">+ Neu</button>
+      <button class="btn small" id="btnDup">Duplizieren</button>
+      <button class="btn small danger" id="btnDel">Löschen</button>
+    </div>
+    <label class="f" for="selTpl">Vorlage als Start</label>
+    <select id="selTpl"><option value="">Vorlage wählen …</option></select>
+    <p class="note">Wird automatisch in diesem Browser gespeichert. Zum Veröffentlichen: exportieren und die Datei <b>charaktere.json</b> in den App-Ordner legen.</p>
+  </section>
+
+  <section class="panel">
+    <div class="tabs" id="tabs"></div>
+    <h2 id="gridTitle" style="display:flex;align-items:center;gap:10px;justify-content:space-between"><span id="gridTitleText">Auswahl</span><button class="btn small" id="btnRandCat" type="button">🎲 Dieses Teil zufällig</button></h2>
+    <div class="grid" id="grid"></div>
+    <div class="colors" id="colors"></div>
+  </section>
+
+  <section class="panel">
+    <div class="stage" id="stage"></div>
+    <div class="row">
+      <button class="btn small" id="btnRandom">🎲 Zufällig</button>
+      <button class="btn small" id="btnPng">⬇ Als Bild (PNG)</button>
+      <button class="btn small" id="btnUndo" title="Strg+Z">↶ Zurück</button>
+      <button class="btn small" id="btnRedo" title="Strg+Y">↷ Weiter</button>
+    </div>
+    <div class="bg-row" id="bgRow"></div>
+    <h2 style="margin-top:14px">Aussehen &amp; Varianten</h2>
+    <div class="tabs" id="varTabs"></div>
+    <div id="varBox"></div>
+    <label class="f" for="inName">Name</label>
+    <input type="text" id="inName" maxlength="18" placeholder="z. B. Hanf-Hanna">
+    <label class="f" for="inTitle">Beiname (optional)</label>
+    <input type="text" id="inTitle" maxlength="30" placeholder="z. B. die Gelassene">
+    <div class="bonus-box">
+      <label class="f" for="inBonusName" style="margin-top:0">Bonus / Merkmal</label>
+      <input type="text" id="inBonusName" maxlength="30" placeholder="Name des Bonus, z. B. Glückspilz">
+      <label class="f" for="inBonusText">Beschreibung</label>
+      <textarea id="inBonusText" maxlength="240" placeholder="Was kann der Charakter? z. B. Bekommt am Start +10 Hash."></textarea>
+      <p class="note">Aktuell wird der Bonus als Text auf der Charakterkarte angezeigt. Die automatische Wirkung im Spiel baue ich pro Bonus ein, sobald du die Ideen festgelegt hast.</p>
+    </div>
+  </section>
+</main>
+
+<script src="charakter-teile.js?v=2.3.126"></script>
+<script src="charaktere.js"></script>
+<script>if(typeof RBChar==='undefined'){ document.body.insertAdjacentHTML('afterbegin','<div style="background:#C0392B;color:#fff;padding:12px 16px;font-weight:700">Die Datei charakter-teile.js konnte nicht geladen werden. Sie muss im selben Ordner wie diese Seite liegen (und beim Hochladen mit hochgeladen werden).</div>'); } else { document.getElementById('ver').textContent = 'Stand '+RBChar.VERSION; }</script>
+<script>
+(function(){
+  'use strict';
+  const KEY = 'rbparty.characters.v1';
+  const BGS = ['#C9D6DC','#F2D98D','#B7E4A0','#F4B6C2','#C7B8F0','#F4C79A','#2B3338'];
+  const CATS = RBChar.CATEGORIES;
+  const $ = id=>document.getElementById(id);
+  const MAXV = 6;   // so viele Varianten pro Charakter
+  const uid = ()=>'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const esc = s=>String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+  function blank(){ return {id:uid(), name:'Neuer Charakter', title:'', bonus:{name:'', text:''}, bg:BGS[0], cfg:RBChar.defaultConfig(), variants:[]}; }
+  function load(){
+    try{ const a = JSON.parse(localStorage.getItem(KEY)||'[]'); if(Array.isArray(a)&&a.length) return a.map(fix); }catch(e){}
+    return [blank()];
+  }
+  function fix(c){
+    const variants = (Array.isArray(c.variants)?c.variants:[]).filter(v=>v&&v.cfg).slice(0,MAXV).map((v,i)=>({id:String(v.id||('v'+(i+1))), name:v.name||('Variante '+(i+1)), bg:v.bg||c.bg||BGS[0], cfg:RBChar.normalize(v.cfg), unlock:{wins:Math.max(0,parseInt(v.unlock&&v.unlock.wins,10)||0), games:Math.max(0,parseInt(v.unlock&&v.unlock.games,10)||0)}, unlocked:v.unlocked===true}));
+    return {id:c.id||uid(), name:c.name||'Charakter', title:c.title||'', bonus:{name:(c.bonus&&c.bonus.name)||'', text:(c.bonus&&c.bonus.text)||''}, bg:c.bg||BGS[0], cfg:RBChar.normalize(c.cfg), variants};
+  }
+  let chars = load(), cur = chars[0].id, cat = 'face', colorSlot = 'c', variantIdx = -1;
+  const curChar = ()=>chars.find(c=>c.id===cur) || chars[0];
+  // sel(): das gerade bearbeitete Aussehen (der Charakter selbst oder eine seiner Varianten, beide haben cfg und bg)
+  const sel = ()=>{ const c = curChar(); return (variantIdx>=0 && c.variants && c.variants[variantIdx]) ? c.variants[variantIdx] : c; };
+  // Verlauf für Zurück/Weiter
+  let hist = [], redo = [], lastSnap = JSON.stringify(chars);
+  function save(){
+    const now = JSON.stringify(chars);
+    if(now !== lastSnap){ hist.push(lastSnap); if(hist.length>80) hist.shift(); redo = []; lastSnap = now; }
+    try{ localStorage.setItem(KEY, now); }catch(e){}
+  }
+  function restore(json){
+    chars = JSON.parse(json); if(!chars.some(c=>c.id===cur)) cur = chars[0].id;
+    lastSnap = json; try{ localStorage.setItem(KEY, json); }catch(e){} renderAll();
+  }
+  function undo(){ if(!hist.length) return; redo.push(lastSnap); restore(hist.pop()); }
+  function redoStep(){ if(!redo.length) return; hist.push(lastSnap); restore(redo.pop()); }
+
+  function renderList(){
+    $('list').innerHTML = chars.map(c=>`<button class="citem ${c.id===cur?'on':''}" data-id="${esc(c.id)}"><span class="thumb" style="background:${esc(c.bg)}">${RBChar.render(c.cfg,{viewBox:'30 20 140 152'})}</span><span><b>${esc(c.name)}</b><small>${esc(c.bonus.name||'kein Bonus')}</small></span></button>`).join('');
+    $('list').querySelectorAll('.citem').forEach(b=>b.onclick=()=>{ cur=b.dataset.id; variantIdx=-1; renderAll(); });
+  }
+  function renderTabs(){
+    $('tabs').innerHTML = CATS.map(k=>`<button class="tab ${k.k===cat?'on':''}" data-k="${k.k}">${k.label}</button>`).join('');
+    $('tabs').querySelectorAll('.tab').forEach(b=>b.onclick=()=>{ cat=b.dataset.k; colorSlot='c'; renderEditor(); renderTabs(); });
+  }
+  function renderEditor(){
+    const c = sel(), def = CATS.find(x=>x.k===cat), parts = RBChar.PARTS[cat], cur_s = c.cfg[cat].s;
+    $('gridTitleText').textContent = def.label;
+    $('grid').innerHTML = parts.map((p,i)=>`<button class="opt ${i===cur_s?'on':''}" data-i="${i}" title="${esc(p.n)}"><span class="t" style="background:${esc(c.bg)}">${RBChar.render(c.cfg,{only:{[cat]:i}, viewBox:def.vb})}</span><span>${esc(p.n)}</span></button>`).join('');
+    $('grid').querySelectorAll('.opt').forEach(b=>b.onclick=()=>{ c.cfg[cat].s=+b.dataset.i; save(); renderAll(); });
+    const p = parts[cur_s];
+    const hasColor = !def.noColor && (cat==='face' || ['f','back','front','base','over'].some(k=>p[k]!==undefined));
+    let h = '';
+    (def.sliders||[]).forEach(sl=>{
+      h += `<div class="slider"><label>${sl.label}<b id="v_${sl.k}">${(+c.cfg[cat][sl.k]).toFixed(2)}</b></label><input type="range" data-sl="${sl.k}" min="${sl.min}" max="${sl.max}" step="${sl.step}" value="${c.cfg[cat][sl.k]}"></div>`;
+    });
+    if(hasColor){
+      if(def.col2){ if(colorSlot==='c3' && !p.col3) colorSlot='c';
+        h += `<div class="ctabs"><button class="btn small ${colorSlot==='c'?'primary':''}" data-slot="c">${def.col1}</button><button class="btn small ${colorSlot==='c2'?'primary':''}" data-slot="c2">${def.col2}</button>${p.col3?`<button class="btn small ${colorSlot==='c3'?'primary':''}" data-slot="c3">${p.col3}</button>`:''}</div>`;
+      } else { colorSlot='c'; h += `<h3>${def.col1}</h3>`; }
+      const val = c.cfg[cat][colorSlot] || '';
+      const isAuto = !!def.auto && colorSlot==='c' && val==='';
+      h += `<div class="swatches">${def.auto && colorSlot==='c' ? `<button class="btn small ${isAuto?'primary':''}" id="autoCol">${def.auto}</button>` : ''}${def.pal.map(col=>`<button class="sw ${col.toLowerCase()===val.toLowerCase()?'on':''}" data-c="${col}" style="background:${col}" aria-label="${col}"></button>`).join('')}<input type="color" id="colPick" value="${/^#[0-9a-f]{6}$/i.test(val)?val:'#808080'}" title="Eigene Farbe"></div>`;
+    } else if(!def.sliders){ h = '<p class="note">Dieser Eintrag hat keine Farbe.</p>'; }
+    $('colors').innerHTML = h;
+    $('colors').querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>{ colorSlot=b.dataset.slot; renderEditor(); });
+    $('colors').querySelectorAll('.sw').forEach(b=>b.onclick=()=>setColor(b.dataset.c));
+    const ac = $('autoCol'); if(ac) ac.onclick = ()=>setColor('');
+    $('colors').querySelectorAll('[data-sl]').forEach(r=>r.oninput = e=>{
+      c.cfg[cat][r.dataset.sl] = +e.target.value; $('v_'+r.dataset.sl).textContent = (+e.target.value).toFixed(2);
+      save(); renderPreview(); renderList();
+      $('grid').querySelectorAll('.opt').forEach((b,i)=>{ b.querySelector('.t').innerHTML = RBChar.render(c.cfg,{only:{[cat]:i}, viewBox:def.vb}); });
+    });
+    const cp = $('colPick'); if(cp) cp.oninput = e=>setColor(e.target.value, true);
+  }
+  function setColor(col, live){
+    const c = sel(); c.cfg[cat][colorSlot] = col; save();
+    renderPreview(); renderList();
+    if(live){ $('grid').querySelectorAll('.opt').forEach((b,i)=>{ b.querySelector('.t').innerHTML = RBChar.render(c.cfg,{only:{[cat]:i}, viewBox:CATS.find(x=>x.k===cat).vb}); }); }
+    else renderEditor();
+  }
+  function renderPreview(){
+    const c = sel();
+    $('stage').style.background = c.bg;
+    $('stage').innerHTML = RBChar.render(c.cfg);
+  }
+  function renderBg(){
+    const c = sel();
+    $('bgRow').innerHTML = BGS.map(b=>`<button class="sw ${b===c.bg?'on':''}" data-b="${b}" style="background:${b}" aria-label="Hintergrund ${b}"></button>`).join('');
+    $('bgRow').querySelectorAll('.sw').forEach(b=>b.onclick=()=>{ c.bg=b.dataset.b; save(); renderAll(); });
+  }
+  function renderFields(){
+    const c = curChar();
+    $('inName').value = c.name; $('inTitle').value = c.title; $('inBonusName').value = c.bonus.name; $('inBonusText').value = c.bonus.text;
+  }
+  const UNLOCK_DEFAULTS = [{games:1},{wins:1},{wins:2},{wins:3},{wins:4},{wins:5}];
+  function renderVariants(){
+    const c = curChar(); c.variants = c.variants || [];
+    if(variantIdx >= c.variants.length) variantIdx = -1;
+    let h = `<button class="tab ${variantIdx<0?'on':''}" data-v="-1">Standard</button>`;
+    for(let i=0;i<MAXV;i++){
+      const v = c.variants[i];
+      if(v) h += `<button class="tab ${variantIdx===i?'on':''}" data-v="${i}">${esc(v.name)}</button>`;
+      else if(i===c.variants.length) h += `<button class="tab" data-add="${i}">+ Variante ${i+1}</button>`;
+    }
+    $('varTabs').innerHTML = h;
+    $('varTabs').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ variantIdx = +b.dataset.v; renderAll(); });
+    $('varTabs').querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{
+      const i = +b.dataset.add;
+      c.variants.push({id:'v'+uid(), name:'Variante '+(i+1)+' '+c.name, bg:c.bg, cfg:JSON.parse(JSON.stringify(c.cfg)), unlock:Object.assign({wins:0,games:0}, UNLOCK_DEFAULTS[i]||{wins:5}), unlocked:false});
+      variantIdx = i; save(); renderAll();
+    });
+    const box = $('varBox'), v = c.variants[variantIdx];
+    if(!v){ box.innerHTML = '<p class="note">Du bearbeitest das Standard-Aussehen. Varianten sind freispielbare Skins (z. B. „Piraten-'+esc(c.name)+'“).</p>'; return; }
+    box.innerHTML = `<label class="f" for="vName">Name der Variante</label><input type="text" id="vName" maxlength="24" value="${esc(v.name)}">
+      <label class="f" for="vGames">Freischalten nach gespielten Spielen mit diesem Charakter (0 = aus)</label><input type="text" id="vGames" inputmode="numeric" value="${v.unlock.games||0}">
+      <label class="f" for="vWins">… oder nach Siegen mit diesem Charakter (0 = aus)</label><input type="text" id="vWins" inputmode="numeric" value="${v.unlock.wins||0}">
+      <label class="f" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="vUnl" ${v.unlocked?'checked':''}> Für alle sofort freigeschaltet</label>
+      <div class="row"><button class="btn small" id="vCopy" type="button">Aus Standard kopieren</button><button class="btn small danger" id="vDel" type="button">Variante löschen</button></div>`;
+    $('vName').oninput = e=>{ v.name = e.target.value; save(); renderList(); $('varTabs').querySelectorAll('[data-v="'+variantIdx+'"]').forEach(b=>b.textContent = v.name); };
+    $('vWins').oninput = e=>{ v.unlock.wins = Math.max(0, parseInt(e.target.value,10)||0); save(); };
+    $('vGames').oninput = e=>{ v.unlock.games = Math.max(0, parseInt(e.target.value,10)||0); save(); };
+    $('vUnl').onchange = e=>{ v.unlocked = e.target.checked; save(); };
+    $('vCopy').onclick = ()=>{ if(!confirm('Aussehen der Variante durch das Standard-Aussehen ersetzen?')) return; v.cfg = JSON.parse(JSON.stringify(c.cfg)); v.bg = c.bg; save(); renderAll(); };
+    $('vDel').onclick = ()=>{ if(!confirm('Variante „'+v.name+'“ löschen?')) return; c.variants.splice(variantIdx,1); variantIdx = -1; save(); renderAll(); };
+  }
+  function renderAll(){ renderList(); renderTabs(); renderVariants(); renderEditor(); renderPreview(); renderBg(); renderFields(); }
+
+  $('inName').oninput = e=>{ curChar().name = e.target.value; save(); renderList(); };
+  $('inTitle').oninput = e=>{ curChar().title = e.target.value; save(); };
+  $('inBonusName').oninput = e=>{ curChar().bonus.name = e.target.value; save(); renderList(); };
+  $('inBonusText').oninput = e=>{ curChar().bonus.text = e.target.value; save(); };
+  $('btnNew').onclick = ()=>{ const c = blank(); chars.push(c); cur = c.id; variantIdx = -1; save(); renderAll(); };
+  $('btnDup').onclick = ()=>{ const c = JSON.parse(JSON.stringify(curChar())); c.id = uid(); c.name += ' (Kopie)'; chars.push(c); cur = c.id; variantIdx = -1; save(); renderAll(); };
+  $('btnDel').onclick = ()=>{
+    if(!confirm('„'+curChar().name+'“ wirklich löschen?')) return;
+    chars = chars.filter(c=>c.id!==cur); if(!chars.length) chars.push(blank());
+    cur = chars[0].id; variantIdx = -1; save(); renderAll();
+  };
+  $('btnRandom').onclick = ()=>{ sel().cfg = RBChar.randomConfig(); save(); renderAll(); };
+  $('btnUndo').onclick = undo; $('btnRedo').onclick = redoStep;
+  document.addEventListener('keydown', e=>{
+    if((e.ctrlKey||e.metaKey) && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||'')){
+      if(e.key==='z'||e.key==='Z'){ e.preventDefault(); e.shiftKey?redoStep():undo(); }
+      else if(e.key==='y'||e.key==='Y'){ e.preventDefault(); redoStep(); }
+    }
+  });
+  // Nur die aktuelle Kategorie zufällig würfeln
+  $('btnRandCat').onclick = ()=>{ const r = RBChar.randomConfig(), c = sel(); c.cfg[cat] = r[cat]; c.cfg = RBChar.normalize(c.cfg); save(); renderAll(); };
+  // Vorlagen aus charaktere.json
+  fetch('charaktere.json',{cache:'no-cache'}).then(r=>r.ok?r.json():[]).catch(()=>[]).then(list=>{
+    list = Array.isArray(list)&&list.length ? list : (Array.isArray(window.RB_CHARAKTERE) ? window.RB_CHARAKTERE : []); const sl = $('selTpl');
+    list.forEach((c,i)=>{ const o = document.createElement('option'); o.value = i; o.textContent = c.name||('Vorlage '+(i+1)); sl.appendChild(o); });
+    sl.onchange = ()=>{ if(sl.value==='') return; const src = list[+sl.value]; if(!src) return; const c = fix(JSON.parse(JSON.stringify(src))); c.id = uid(); chars.push(c); cur = c.id; variantIdx = -1; sl.value = ''; save(); renderAll(); };
+  });
+  $('btnExport').onclick = ()=>{
+    const blob = new Blob([JSON.stringify(chars,null,2)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'charaktere.json';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    // zusätzlich als charaktere.js: damit läuft das Spiel auch lokal ohne Server
+    setTimeout(()=>{
+      const b2 = new Blob(['window.RB_CHARAKTERE = '+JSON.stringify(chars,null,2)+';\n'], {type:'text/javascript'});
+      const a2 = document.createElement('a'); a2.href = URL.createObjectURL(b2); a2.download = 'charaktere.js';
+      document.body.appendChild(a2); a2.click(); a2.remove(); setTimeout(()=>URL.revokeObjectURL(a2.href),1000);
+    }, 400);
+  };
+  $('btnImport').onclick = ()=>$('fileImport').click();
+  $('fileImport').onchange = e=>{
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = ()=>{
+      try{
+        const a = JSON.parse(r.result); if(!Array.isArray(a)) throw new Error('Keine Charakter-Liste');
+        const add = a.map(fix);
+        add.forEach(n=>{ const i = chars.findIndex(c=>c.id===n.id); if(i>=0) chars[i]=n; else chars.push(n); });
+        cur = add[0] ? add[0].id : cur; save(); renderAll();
+      }catch(err){ alert('Datei konnte nicht gelesen werden: '+err.message); }
+      e.target.value = '';
+    };
+    r.readAsText(f);
+  };
+  $('btnPng').onclick = ()=>{
+    const c = sel(), W = 600, H = 630;
+    const svg = RBChar.render(c.cfg,{viewBox:'0 0 200 232'});
+    const img = new Image();
+    img.onload = ()=>{
+      const cv = document.createElement('canvas'); cv.width=W; cv.height=H; const x = cv.getContext('2d');
+      x.fillStyle = c.bg; x.fillRect(0,0,W,H);
+      const w = W*0.92, h = w*232/200; x.drawImage(img,(W-w)/2,H-h,w,h);
+      cv.toBlob(b=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=(c.name||'charakter')+'.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); });
+    };
+    img.src = 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+  };
+  renderAll();
+})();
+</script>
+</body>
+</html>

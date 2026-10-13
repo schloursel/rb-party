@@ -1,6 +1,6 @@
 // RB-Party Service Worker â€“ macht die App offline startbar.
 // Bei jeder neuen Version der App VERSION erhÃ¶hen, damit alte Dateien ersetzt werden.
-const VERSION = 'rbparty-v2.3.118';
+const VERSION = 'rbparty-v2.3.127';
 const APP_FILES = [
   './',
   'index.html',
@@ -8,6 +8,7 @@ const APP_FILES = [
   'rb-flags.js',
   'charakter-teile.js',
   'charaktere.json',
+  'charaktere.js',
   'charakter-editor.html',
   'manifest.webmanifest',
   'icons/icon-180.png',

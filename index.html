@@ -267,6 +267,25 @@
   .char-detail{ margin-top:10px; }
   .ng-char-btn{ display:flex; align-items:center; gap:6px; padding:0 8px 0 0; border:1px solid var(--sep); border-radius:10px; background:var(--surface-alt); font:inherit; font-size:12px; font-weight:700; color:var(--text); cursor:pointer; }
   .ng-char-btn .char-av{ width:34px; height:36px; border-radius:9px 0 0 9px; border:none; }
+  .ng-gadget-btn{ display:flex; flex-direction:column; align-items:center; justify-content:center; width:50px; height:36px; padding:0 2px; border:1px solid var(--sep); border-radius:10px; background:var(--surface-alt); font:inherit; font-size:9.5px; font-weight:700; line-height:1.05; color:var(--text); cursor:pointer; }
+  .ng-gadget-btn .gi{ font-size:16px; line-height:1; }
+  .gad-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+  .gad-opt{ border:2.5px solid transparent; border-radius:14px; background:var(--surface-alt); padding:10px 8px; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; font-family:inherit; color:var(--text); text-align:center; }
+  .gad-opt.on{ border-color:var(--accent); }
+  .gad-opt.taken{ opacity:.4; cursor:not-allowed; }
+  .gad-opt .gi{ font-size:30px; line-height:1; }
+  .gad-opt b{ font-size:14px; } .gad-opt small{ font-size:11.5px; color:var(--text-soft); line-height:1.25; }
+  .var-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+  .var-opt{ border:2.5px solid transparent; border-radius:12px; background:var(--surface-alt); padding:0 0 4px; display:flex; flex-direction:column; align-items:center; cursor:pointer; overflow:hidden; font-family:inherit; color:var(--text); }
+  .var-opt.on{ border-color:var(--accent); }
+  .var-opt.locked{ opacity:.55; cursor:not-allowed; }
+  .var-opt .cv{ position:relative; width:100%; aspect-ratio:1/1.05; display:flex; align-items:flex-end; justify-content:center; }
+  .var-opt .cv svg{ width:92%; height:auto; display:block; }
+  .var-opt.locked .cv svg{ filter:grayscale(1) brightness(.7); }
+  .var-opt .lk{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-style:normal; font-size:24px; }
+  .var-opt b{ font-size:11px; margin-top:3px; padding:0 3px; text-align:center; line-height:1.1; } .var-opt small{ font-size:10px; color:var(--text-soft); padding:0 3px; text-align:center; }
+  .gadget-line{ font-size:12.5px; line-height:1.3; background:var(--surface-alt); border-radius:10px; padding:6px 10px; color:var(--text-soft); display:flex; gap:8px; align-items:center; }
+  .gadget-line .gi{ font-size:18px; } .gadget-line b{ color:var(--text); }
   .ng-sec{ margin:16px 0 6px; font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--text-faint); }
   .ng-modes{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
   .ng-mode{ text-align:left; padding:10px 12px; border-radius:12px; border:1.5px solid var(--sep-strong); background:var(--surface-alt); color:var(--text); font-family:inherit; cursor:pointer; }
@@ -1218,7 +1237,8 @@
 
 <script src="rb-sounds.js"></script>
 <script src="rb-flags.js"></script>
-<script src="charakter-teile.js?v=2.3.104"></script>
+<script src="charakter-teile.js?v=2.3.126"></script>
+<script src="charaktere.js"></script>
 <script>
 window.addEventListener('error', function(e){
   try{
@@ -1428,10 +1448,50 @@ window.addEventListener('unhandledrejection', function(e){
   const JOINT_START_ITEMS = ['papes','tabak'];  // Grundausstattung zum Spielstart (Joint-Bau war sonst fast unerreichbar)
   const JOINT_KEEP_ITEMS  = [];                 // 2.3.71: nach dem Joint-Bau sind alle Items verbraucht, Papes und Tabak gibt es wieder im Bunker (Startausstattung nur einmal)
   function startJointItems(){ const o={}; JOINT_START_ITEMS.forEach(k=>{ o[k]=true; }); return o; }
-  function jointCostFor(atRauchspot){
+  function jointCostFor(atRauchspot, p){
     const windy = !!(state && state.weather && state.weather.type==='windig');
     const base = windy ? JOINT_COST_WINDY : JOINT_COST;
+    if(p && p.gadget==='vape') return atRauchspot ? 0 : Math.round(base/2);   // Vape: Joints halber Preis, am Rauchspot umsonst
     return atRauchspot ? Math.round(base*JOINT_COST_RAUCHSPOT/JOINT_COST) : base;
+  }
+
+  // ---------- Gadgets: pro Spiel von höchstens einer Person gewählt, kleine Vorteile ----------
+  const GADGETS = [
+    {id:'sturmmaske',  name:'Sturmmaske',   icon:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.15em" aria-hidden="true"><path d="M12 2.2c-4 0-6.6 3-6.6 7.3 0 2.3.5 3.8 1.2 5.2L5.6 20c-.2.8.3 1.8 1.3 1.8h10.2c1 0 1.5-1 1.3-1.8l-1-5.3c.7-1.4 1.2-2.9 1.2-5.2 0-4.3-2.6-7.3-6.6-7.3z" fill="#2B2D31"/><rect x="7.4" y="8.2" width="9.2" height="3.6" rx="1.8" fill="#F3C9A0"/><circle cx="10" cy="10" r=".9" fill="#2B2D31"/><circle cx="14" cy="10" r=".9" fill="#2B2D31"/></svg>', text:'Shops kosten nur die Hälfte.'},
+    {id:'fahrrad',     name:'Fahrrad',      icon:'🚲', text:'Bergab +2, bergauf −1 aufs Würfeln.'},
+    {id:'spassgetraenk', name:'Spaßgetränk', icon:'🍺', text:'Eine Polizeikontrolle pro Spiel wird ignoriert.'},
+    {id:'vape',        name:'Vape',         icon:'💨', text:'Joint-Bau zum halben Preis, am Rauchspot umsonst.'},
+    {id:'powerbank',   name:'Powerbank',    icon:'🔋', text:'Jede 3. Runde ein zusätzlicher Zug.'},
+    {id:'seppelsche',  name:'Seppelsche',   icon:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.15em" aria-hidden="true"><path d="M9.2 9.5h5.6l.4 1.6c.4 1.4 1.3 2.3 1.3 4.2V21a1.3 1.3 0 0 1-1.3 1.3H8.8A1.3 1.3 0 0 1 7.5 21v-5.7c0-1.9.9-2.8 1.3-4.2z" fill="#8B5A2B"/><rect x="10" y="4.2" width="4" height="5.6" rx=".8" fill="#A06A33"/><rect x="9.2" y="2.1" width="5.6" height="3" rx="1.3" fill="#F2F0EA" stroke="#9A968C" stroke-width=".5"/><path d="M14.8 3.6h1.6c.5 0 .8.4.8.8v3.2c0 .4-.3.8-.8.8H14" fill="none" stroke="#B9BCC2" stroke-width="1" stroke-linecap="round"/><rect x="9.3" y="15.2" width="5.4" height="4.2" rx=".6" fill="#F5E6C8"/><path d="M10.5 17.3h3" stroke="#8B5A2B" stroke-width=".9" stroke-linecap="round"/></svg>', text:'Biergarten halber Preis, Bier beim Waldfest gratis.'},
+    {id:'bauchtasche', name:'Bauchtasche',  icon:'👝', text:'Bis zu 2 pro Joint-Teil tragen (z. B. 2 Tips).'},
+    {id:'regenjacke',  name:'Regenjacke',   icon:'🧥', text:'Regen-Rennen zum Bunker: doppelt so schnell laufen, verliert nie Hash.'}
+  ];
+  const gadgetById = id=>GADGETS.find(g=>g.id===id)||null;
+  const hasGadget = (p,id)=>!!(p && p.gadget===id);
+  const gadgetState = p=>{ if(!p.gs || typeof p.gs!=='object') p.gs = {}; return p.gs; };
+  const BAUCH_MAX = 2;
+  // Preis für eine Person: ctx = 'shop' | 'biergarten' | 'bunker' | 'fredi' | 'kirche'
+  function priceFor(p, base, ctx){
+    let c = base||0;
+    if(hasGadget(p,'sturmmaske')) c = Math.ceil(c/2);
+    else if(hasGadget(p,'seppelsche') && ctx==='biergarten') c = Math.ceil(c/2);
+    return c;
+  }
+  // Joint-Teil bekommen. Mit Bauchtasche darf ein Teil bis zu BAUCH_MAX-mal vorhanden sein (p.jointN zählt mit).
+  function giveJointItem(p, key){
+    if(!p.joint) p.joint = {};
+    if(!p.jointN || typeof p.jointN!=='object') p.jointN = {};
+    if(p.joint[key]){
+      if(hasGadget(p,'bauchtasche') && (p.jointN[key]||1) < BAUCH_MAX){ p.jointN[key] = (p.jointN[key]||1)+1; return true; }
+      return false;
+    }
+    p.joint[key] = true; p.jointN[key] = 1; return true;
+  }
+  // Ein Joint-Teil abgeben (Einsatz, Polizei, Rad). Mit mehreren Stück bleibt das Teil vorhanden.
+  function takeJointItem(p, key){
+    if(!p.joint || !p.joint[key]) return false;
+    if(p.jointN && (p.jointN[key]||1) > 1){ p.jointN[key]--; return true; }
+    p.joint[key] = false; if(p.jointN) delete p.jointN[key]; return true;
   }
 
   const RAD_GUT = [
@@ -2006,15 +2066,50 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
 
   // ---------- Charaktere (aus charaktere.json, Entwürfe aus dem Editor überschreiben auf diesem Gerät) ----------
   let CHAR_LIB = [];
-  function charSnapshot(c){ return {id:c.id, name:c.name, title:c.title||'', bonus:{name:(c.bonus&&c.bonus.name)||'', text:(c.bonus&&c.bonus.text)||''}, bg:c.bg||'#C9D6DC', cfg:RBChar.normalize(c.cfg)}; }
+  function charSnapshot(c){
+    const variants = Array.isArray(c.variants) ? c.variants.filter(v=>v && v.cfg).map(v=>({id:String(v.id||v.name||'v'), name:v.name||c.name, bg:v.bg||c.bg||'#C9D6DC', cfg:RBChar.normalize(v.cfg), unlock:{wins:Math.max(0, parseInt(v.unlock&&v.unlock.wins,10)||0), games:Math.max(0, parseInt(v.unlock&&v.unlock.games,10)||0)}, unlocked:v.unlocked===true})) : [];
+    return {id:c.id, name:c.name, title:c.title||'', bonus:{name:(c.bonus&&c.bonus.name)||'', text:(c.bonus&&c.bonus.text)||''}, bg:c.bg||'#C9D6DC', cfg:RBChar.normalize(c.cfg), variants, variantId:c.variantId||null, baseName:c.baseName||null};
+  }
+  // Siege pro Charakter (nur auf diesem Gerät): schalten Varianten frei
+  const CHAR_WINS_KEY = 'rbparty.charWins';
+  function charWins(){ try{ const o = JSON.parse(localStorage.getItem(CHAR_WINS_KEY)||'{}'); return (o && typeof o==='object') ? o : {}; }catch(e){ return {}; } }
+  function addCharWin(id){ if(!id) return; const o = charWins(); o[id] = (o[id]||0)+1; try{ localStorage.setItem(CHAR_WINS_KEY, JSON.stringify(o)); }catch(e){} }
+  // Spiele pro Charakter (nur auf diesem Gerät): ein beendetes Spiel zählt für alle, die den Charakter gespielt haben
+  const CHAR_GAMES_KEY = 'rbparty.charGames';
+  function charGames(){ try{ const o = JSON.parse(localStorage.getItem(CHAR_GAMES_KEY)||'{}'); return (o && typeof o==='object') ? o : {}; }catch(e){ return {}; } }
+  function addCharGame(id){ if(!id) return; const o = charGames(); o[id] = (o[id]||0)+1; try{ localStorage.setItem(CHAR_GAMES_KEY, JSON.stringify(o)); }catch(e){} }
+  // Freischaltung: unlock.games = so viele beendete Spiele, unlock.wins = so viele Siege (bei beiden reicht eines)
+  function variantNeed(base, v){
+    const u = (v && v.unlock) || {}, w = charWins()[base.id]||0, g = charGames()[base.id]||0;
+    if(v && v.unlocked===true) return null;
+    const needs = [];
+    if(u.games>0) needs.push({left:Math.max(0,u.games-g), unit:'Spiel', units:'Spiele'});
+    if(u.wins>0) needs.push({left:Math.max(0,u.wins-w), unit:'Sieg', units:'Siege'});
+    if(!needs.length) return null;
+    const open = needs.filter(n=>n.left>0);
+    if(open.length<needs.length) return null;   // mindestens eine Bedingung erfüllt
+    open.sort((a,b)=>a.left-b.left);
+    return open[0];
+  }
+  function variantUnlocked(base, v){ return !!v && variantNeed(base, v)===null; }
+  // Auswahl-Ergebnis: Standard oder Variante. Anzeigename ist der Variantenname, die Charakter-ID bleibt gleich.
+  function charWithVariant(base, variantId){
+    const s = charSnapshot(base); s.variants = [];
+    const v = variantId && (base.variants||[]).find(x=>x.id===variantId);
+    if(!v){ s.variantId = null; return s; }
+    s.cfg = v.cfg; s.bg = v.bg || s.bg; s.baseName = base.name; s.name = v.name; s.variantId = v.id;
+    return s;
+  }
   function loadCharLib(){
     const merge = list=>{
       const out = CHAR_LIB.slice();
-      (list||[]).forEach(c=>{ if(!c || !c.id) return; const i = out.findIndex(x=>x.id===c.id); const s = charSnapshot(c); if(i>=0) out[i]=s; else out.push(s); });
+      (list||[]).forEach(c=>{ if(!c || !c.id) return; const i = out.findIndex(x=>x.id===c.id); const s = charSnapshot(c); if(i>=0){ const keep = out[i].variants; out[i]=s; if(!(s.variants&&s.variants.length) && keep && keep.length) out[i].variants = keep; } else out.push(s); });
       CHAR_LIB = out;
     };
+    // Beim lokalen Öffnen (file://) geht fetch nicht: dann kommen die Charaktere aus charaktere.js
     fetch('charaktere.json', {cache:'no-cache'}).then(r=>r.ok?r.json():[]).catch(()=>[]).then(list=>{
-      merge(Array.isArray(list)?list:[]);
+      if(!Array.isArray(list) || !list.length) list = Array.isArray(window.RB_CHARAKTERE) ? window.RB_CHARAKTERE : [];
+      merge(list);
       try{ const d = JSON.parse(localStorage.getItem('rbparty.characters.v1')||'[]'); if(Array.isArray(d)) merge(d); }catch(e){}
       try{ renderNgNames(); }catch(e){}
     });
@@ -2028,17 +2123,19 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     return `<div class="char-bonus"><b>${escapeHtml(ch.name)}</b>${ch.title?' · '+escapeHtml(ch.title):''}${b.name||b.text ? `<br><b>${escapeHtml(b.name||'Bonus')}:</b> ${escapeHtml(b.text||'')}` : ''}</div>`;
   }
   // Auswahlfenster: onPick(charSnapshot) wird beim Bestätigen aufgerufen; takenIds = von anderen schon gewählt
-  function openCharPicker(currentId, takenIds, onPick){
+  function openCharPicker(currentId, takenIds, onPick, currentVariantId){
     let modal = document.getElementById('charModal');
     if(!modal){
       modal = document.createElement('div'); modal.className='modal-backdrop'; modal.id='charModal'; modal.style.zIndex=60;
-      modal.innerHTML = `<div class="modal-sheet" style="max-height:92vh; overflow-y:auto;"><h3 class="modal-title">🎭 Charakter wählen</h3><div class="char-grid" id="charGrid"></div><div class="char-detail" id="charDetail"></div><div class="modal-actions" style="margin-top:14px;"><button class="pill-btn subtle" id="charCancel" type="button">Abbrechen</button><button class="pill-btn" id="charOk" type="button">Wählen</button></div></div>`;
+      modal.innerHTML = `<div class="modal-sheet" style="max-height:92vh; overflow-y:auto;"><h3 class="modal-title">🎭 Charakter wählen</h3><div class="char-grid" id="charGrid"></div><div class="char-detail" id="charDetail"></div><div id="charVariants"></div><div class="modal-actions" style="margin-top:14px;"><button class="pill-btn subtle" id="charCancel" type="button">Abbrechen</button><button class="pill-btn" id="charOk" type="button">Wählen</button></div></div>`;
       document.body.appendChild(modal);
       modal.addEventListener('click', e=>{ if(e.target===modal) modal.classList.remove('open'); });
       modal.querySelector('#charCancel').addEventListener('click', ()=>modal.classList.remove('open'));
     }
     const allowDup = CHAR_LIB.length <= takenIds.length;
     let chosen = CHAR_LIB.find(c=>c.id===currentId) || null;
+    let chosenVariant = chosen ? (currentVariantId||null) : null;
+    const varWrap = modal.querySelector('#charVariants');
     const grid = modal.querySelector('#charGrid'), detail = modal.querySelector('#charDetail'), ok = modal.querySelector('#charOk');
     const paint = ()=>{
       if(!CHAR_LIB.length){ grid.innerHTML = '<p class="modal-sub">Noch keine Charaktere vorhanden. Lege sie im Charakter-Editor an und speichere die Datei charaktere.json im App-Ordner.</p>'; detail.innerHTML=''; ok.disabled = true; return; }
@@ -2046,12 +2143,48 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         const taken = !allowDup && takenIds.includes(c.id) && c.id!==currentId;
         return `<button type="button" class="char-opt ${chosen&&chosen.id===c.id?'on':''} ${taken?'taken':''}" data-id="${escapeAttr(c.id)}" ${taken?'disabled':''}><span class="cv" style="background:${escapeAttr(c.bg)}">${RBChar.render(c.cfg,{viewBox:'24 14 152 170'})}</span><b>${escapeHtml(c.name)}</b><small>${taken?'vergeben':escapeHtml(c.bonus.name||'')}</small></button>`;
       }).join('');
-      grid.querySelectorAll('.char-opt').forEach(b=>b.addEventListener('click', ()=>{ chosen = CHAR_LIB.find(c=>c.id===b.dataset.id); paint(); }));
+      grid.querySelectorAll('.char-opt').forEach(b=>b.addEventListener('click', ()=>{ chosen = CHAR_LIB.find(c=>c.id===b.dataset.id); chosenVariant = null; paint(); }));
+      paintVariants();
       detail.innerHTML = chosen ? charBonusHtml(chosen) : '<p class="modal-sub">Tippe auf einen Charakter.</p>';
       ok.disabled = !chosen;
     };
-    ok.onclick = ()=>{ if(!chosen) return; modal.classList.remove('open'); onPick(charSnapshot(chosen)); };
+    function paintVariants(){
+      const vs = (chosen && chosen.variants) || [];
+      if(!chosen || !vs.length){ varWrap.innerHTML = ''; return; }
+      const wins = charWins()[chosen.id]||0, games = charGames()[chosen.id]||0;
+      const tile = (id, name, cfg, bg, locked, sub)=>`<button type="button" class="var-opt ${(chosenVariant||null)===(id||null)?'on':''} ${locked?'locked':''}" data-vid="${escapeAttr(id||'')}" ${locked?'disabled':''}><span class="cv" style="background:${escapeAttr(bg)}">${RBChar.render(cfg,{viewBox:'24 14 152 170'})}${locked?'<i class="lk">🔒</i>':''}</span><b>${escapeHtml(name)}</b><small>${escapeHtml(sub)}</small></button>`;
+      let h = `<p class="modal-sub" style="margin:12px 0 6px;">Aussehen · mit ${escapeHtml(chosen.name)}: <b>${games}</b> Spiel${games===1?'':'e'}, <b>${wins}</b> Sieg${wins===1?'':'e'}</p><div class="var-row">`;
+      h += tile('', 'Standard', chosen.cfg, chosen.bg, false, '');
+      vs.forEach(v=>{ const nd = variantNeed(chosen, v), un = nd===null; h += tile(v.id, v.name, v.cfg, v.bg||chosen.bg, !un, un ? '' : 'noch '+nd.left+' '+(nd.left===1?nd.unit:nd.units)); });
+      varWrap.innerHTML = h+'</div>';
+      varWrap.querySelectorAll('.var-opt').forEach(b=>b.addEventListener('click', ()=>{ chosenVariant = b.dataset.vid || null; paintVariants(); }));
+    }
+    ok.onclick = ()=>{ if(!chosen) return; modal.classList.remove('open'); onPick(charWithVariant(chosen, chosenVariant)); };
     paint(); modal.classList.add('open');
+  }
+  // Gadget-Auswahl: takenIds = von anderen schon gewählt (jedes Gadget nur einmal pro Spiel), onPick(id|null)
+  function gadgetLineHtml(p){
+    const g = p && gadgetById(p.gadget); if(!g) return '';
+    const st = gadgetState(p), note = (g.id==='spassgetraenk' && st.policeUsed) ? ' (verbraucht)' : '';
+    return `<div class="gadget-line"><span class="gi">${g.icon}</span><span><b>${escapeHtml(g.name)}</b>${note}<br>${escapeHtml(g.text)}</span></div>`;
+  }
+  function openGadgetPicker(currentId, takenIds, onPick){
+    let modal = document.getElementById('gadgetModal');
+    if(!modal){
+      modal = document.createElement('div'); modal.className='modal-backdrop'; modal.id='gadgetModal'; modal.style.zIndex=60;
+      modal.innerHTML = `<div class="modal-sheet" style="max-height:92vh; overflow-y:auto;"><h3 class="modal-title">🎒 Gadget wählen</h3><p class="modal-sub">Jedes Gadget gibt es nur einmal pro Spiel.</p><div class="gad-grid" id="gadGrid"></div><div class="modal-actions" style="margin-top:14px;"><button class="pill-btn subtle" id="gadCancel" type="button">Abbrechen</button><button class="pill-btn subtle" id="gadNone" type="button">Kein Gadget</button></div></div>`;
+      document.body.appendChild(modal);
+      modal.addEventListener('click', e=>{ if(e.target===modal) modal.classList.remove('open'); });
+      modal.querySelector('#gadCancel').addEventListener('click', ()=>modal.classList.remove('open'));
+    }
+    const grid = modal.querySelector('#gadGrid');
+    grid.innerHTML = GADGETS.map(g=>{
+      const taken = takenIds.includes(g.id) && g.id!==currentId;
+      return `<button type="button" class="gad-opt ${g.id===currentId?'on':''} ${taken?'taken':''}" data-id="${g.id}" ${taken?'disabled':''}><span class="gi">${g.icon}</span><b>${escapeHtml(g.name)}</b><small>${taken?'vergeben':escapeHtml(g.text)}</small></button>`;
+    }).join('');
+    grid.querySelectorAll('.gad-opt').forEach(b=>b.addEventListener('click', ()=>{ modal.classList.remove('open'); onPick(b.dataset.id); }));
+    modal.querySelector('#gadNone').onclick = ()=>{ modal.classList.remove('open'); onPick(null); };
+    modal.classList.add('open');
   }
   loadCharLib();
 
@@ -2228,8 +2361,8 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       bunker: { hasItems:true, pot:0 },
       dorfplatzChallengeCount: 0,
       players: [
-        {id:cryptoId(), name:"Spieler 1", hash:50, inventory:[], joint:startJointItems(), jointOpen:false, skipNextTurn:false, jointsBuilt:0, color:TEAM_COLORS[0], fieldNr:BOARD_START_FIELD, fieldHistory:[]},
-        {id:cryptoId(), name:"Spieler 2", hash:50, inventory:[], joint:startJointItems(), jointOpen:false, skipNextTurn:false, jointsBuilt:0, color:TEAM_COLORS[1], fieldNr:BOARD_START_FIELD, fieldHistory:[]}
+        {id:cryptoId(), name:"Spieler 1", hash:50, inventory:[], joint:startJointItems(), jointOpen:false, skipNextTurn:false, jointsBuilt:0, gadget:null, gs:{}, jointN:{}, color:TEAM_COLORS[0], fieldNr:BOARD_START_FIELD, fieldHistory:[]},
+        {id:cryptoId(), name:"Spieler 2", hash:50, inventory:[], joint:startJointItems(), jointOpen:false, skipNextTurn:false, jointsBuilt:0, gadget:null, gs:{}, jointN:{}, color:TEAM_COLORS[1], fieldNr:BOARD_START_FIELD, fieldHistory:[]}
       ],
       cards: cards, shops: shops, orte: orte, notes: "", board: JSON.parse(JSON.stringify(DEFAULT_BOARD)), boardAutoMode: false,
       log: [], playedGames: [],
@@ -2414,6 +2547,9 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       if(typeof p.jointOpen!=='boolean') p.jointOpen = false;
       if(typeof p.skipNextTurn!=='boolean') p.skipNextTurn = false;
       if(typeof p.jointsBuilt!=='number') p.jointsBuilt = 0;
+      if(typeof p.gadget!=='string' || !GADGETS.some(g=>g.id===p.gadget)) p.gadget = null;
+      if(!p.gs || typeof p.gs!=='object') p.gs = {};
+      if(!p.jointN || typeof p.jointN!=='object') p.jointN = {};
     });
     // Balancing 2.3.67: alte Spielstände auf die neuen Preise heben, aber nur Werte, die noch dem alten Standard entsprechen
     // (selbst im Editor angepasste Preise bleiben unangetastet). Einmalig pro Spielstand.
@@ -2602,6 +2738,11 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     const winners = standings.filter(s=>s.rank===1);
     const mode = state.mode ? {type:state.mode.type, value:state.mode.value, label:modeGoalText()} : null;
     state.gameEnded = true; state.endPromptKey = null;
+    if(!state.winsCounted){
+      state.winsCounted = true;
+      state.players.forEach(pl=>{ if(pl.char) addCharGame(pl.char.id); });
+      winners.forEach(w=>{ const pl = state.players.find(x=>x.id===w.id); if(pl && pl.char) addCharWin(pl.char.id); });
+    }
     logEvent(null, '🏁 Spielende ('+modeGoalText(mode)+') – '+winners.map(w=>w.name).join(' & ')+' gewinnt');
     renderAll(); scheduleSave();
     bcast('game_end', {mode, winners:winners.map(w=>({name:w.name,color:w.color})), standings});
@@ -2922,8 +3063,8 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
   function buildPlayerCard(p){
     const card = document.createElement('div'); card.className='player-card';
     const invHtml = p.inventory.length ? p.inventory.map((item,idx)=>`<span class="inv-chip" data-idx="${idx}">${escapeHtml(item)} ✕</span>`).join('') : `<span class="inv-empty">Kein Inventar</span>`;
-    const jointChips = JOINT_KEYS.map(j=>`<button class="joint-chip ${p.joint[j.k]?'on':''}" data-jk="${j.k}">${jointIconSVG(j.k,16)} ${j.label}</button>`).join('');
-    const jointDone = JOINT_KEYS.every(j=>p.joint[j.k]) && p.hash>=jointCostFor(true);
+    const jointChips = JOINT_KEYS.map(j=>`<button class="joint-chip ${p.joint[j.k]?'on':''}" data-jk="${j.k}">${jointIconSVG(j.k,16)} ${j.label}${(p.joint[j.k] && p.jointN && p.jointN[j.k]>1) ? ' ×'+p.jointN[j.k] : ''}</button>`).join('');
+    const jointDone = JOINT_KEYS.every(j=>p.joint[j.k]) && p.hash>=jointCostFor(true,p);
     const isTurn = state.players[state.turnIndex] === p;
     const jointCount = JOINT_KEYS.filter(j=>p.joint[j.k]).length;
     if(isTurn) card.classList.add('is-turn');
@@ -2938,6 +3079,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         ${state.gameStarted ? '' : '<button class="player-remove">✕</button>'}
       </div>
       ${p.char ? charBonusHtml(p.char) : ''}
+      ${gadgetLineHtml(p)}
       ${p.colorPickerOpen ? `<div class="color-picker-row" style="display:flex; gap:5px; flex-wrap:wrap; margin:2px 0 10px;">${TEAM_COLORS.map(c=>`<button class="color-swatch-pick" data-c="${c}" style="width:22px; height:22px; border-radius:50%; background:${c}; border:${p.color===c?'2.5px solid var(--text)':'2px solid transparent'}; opacity:${p.color===c?'1':'0.45'}; padding:0; cursor:pointer;"></button>`).join('')}</div>` : ''}
       <div class="stat-row"><span class="stat-label">HASH <button type="button" class="qmark" data-tip="Hash ist Währung und Punktestand. Tippe auf den Wert, um ihn direkt zu ändern, oder nutze die Schnell-Buttons.">?</button></span><div class="hash-row">
         <input class="hash-num" value="${p.hash}" inputmode="numeric">
@@ -2950,7 +3092,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       <div>
         <div class="joint-progress" aria-hidden="true"><span class="jp-bar"><i style="width:${Math.round(100*jointCount/Math.max(1,JOINT_KEYS.length))}%"></i></span><span class="jp-num">${jointCount}/${JOINT_KEYS.length}</span></div>
         <button class="joint-toggle">Joint-Fortschritt bearbeiten ${p.jointOpen?'▾':'▸'}</button>
-        ${p.jointOpen ? `<div class="joint-grid">${jointChips}</div><div style="margin-top:6px;">${jointDone?`<span class="final-badge">🎉 Bereit! Bau den Joint an einem Ort (am Rauchspot ${escapeHtml((getCurrentRauchspot()||{}).name||'–')} nur ${jointCostFor(true)} Hash)</span>`:`<span class="inv-empty">Hash ≥ ${jointCostFor(false)} (Rauchspot ${jointCostFor(true)}): ${p.hash>=jointCostFor(true)?'✓':'✕'}</span>`}</div>` : ''}
+        ${p.jointOpen ? `<div class="joint-grid">${jointChips}</div><div style="margin-top:6px;">${jointDone?`<span class="final-badge">🎉 Bereit! Bau den Joint an einem Ort (am Rauchspot ${escapeHtml((getCurrentRauchspot()||{}).name||'–')} nur ${jointCostFor(true,p)} Hash)</span>`:`<span class="inv-empty">Hash ≥ ${jointCostFor(false,p)} (Rauchspot ${jointCostFor(true,p)}): ${p.hash>=jointCostFor(true,p)?'✓':'✕'}</span>`}</div>` : ''}
       </div>
     `;
     card.querySelector('.player-name').addEventListener('input', e=>{ p.name=e.target.value; scheduleSave(); renderHeaderChips(); renderPlayerStrip(); });
@@ -2959,7 +3101,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     const avBtn = card.querySelector('[data-act="char"]');
     if(avBtn) avBtn.addEventListener('click', ()=>{
       if(state.gameStarted) return;
-      openCharPicker(p.char&&p.char.id, state.players.filter(x=>x!==p&&x.char).map(x=>x.char.id), ch=>{ p.char = ch; renderPlayersGrid(); scheduleSave(); });
+      openCharPicker(p.char&&p.char.id, state.players.filter(x=>x!==p&&x.char).map(x=>x.char.id), ch=>{ p.char = ch; renderPlayersGrid(); scheduleSave(); }, p.char&&p.char.variantId);
     });
     card.querySelector('.color-dot-btn').addEventListener('click', ()=>{ p.colorPickerOpen = !p.colorPickerOpen; renderPlayersGrid(); });
     card.querySelectorAll('.color-swatch-pick').forEach(btn=>{ btn.addEventListener('click', ()=>{ p.color = btn.dataset.c; p.colorPickerOpen = false; renderPlayersGrid(); renderPlayerStrip(); scheduleSave(); }); });
@@ -2981,7 +3123,11 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     });
     card.querySelectorAll('.inv-chip').forEach(chip=>{ chip.addEventListener('click', ()=>{ p.inventory.splice(parseInt(chip.dataset.idx,10),1); renderPlayersGrid(); scheduleSave(); }); });
     card.querySelector('.joint-toggle').addEventListener('click', ()=>{ p.jointOpen=!p.jointOpen; renderPlayersGrid(); });
-    card.querySelectorAll('.joint-chip').forEach(btn=>{ btn.addEventListener('click', ()=>{ p.joint[btn.dataset.jk]=!p.joint[btn.dataset.jk]; renderPlayersGrid(); scheduleSave(); }); });
+    card.querySelectorAll('.joint-chip').forEach(btn=>{ btn.addEventListener('click', ()=>{
+      const k = btn.dataset.jk;
+      if(p.joint[k]){ if(!giveJointItem(p,k)){ p.joint[k]=false; if(p.jointN) delete p.jointN[k]; } }   // Bauchtasche: erst auf 2 hochzählen, dann entfernen
+      else giveJointItem(p,k);
+      renderPlayersGrid(); scheduleSave(); }); });
     return card;
   }
   function renderPlayersGrid(){
@@ -2991,7 +3137,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     if(!state.gameStarted){
       const addBtn = document.createElement('button'); addBtn.className='add-player'; addBtn.textContent='+ Spieler hinzufügen';
       addBtn.addEventListener('click', ()=>{
-        state.players.push({id:cryptoId(), name:`Spieler ${state.players.length+1}`, hash:20, inventory:[], joint:startJointItems(), jointOpen:false, skipNextTurn:false, jointsBuilt:0, color:TEAM_COLORS[state.players.length%TEAM_COLORS.length], fieldNr:BOARD_START_FIELD, fieldHistory:[]});
+        state.players.push({id:cryptoId(), name:`Spieler ${state.players.length+1}`, hash:20, inventory:[], joint:startJointItems(), jointOpen:false, skipNextTurn:false, jointsBuilt:0, gadget:null, gs:{}, jointN:{}, color:TEAM_COLORS[state.players.length%TEAM_COLORS.length], fieldNr:BOARD_START_FIELD, fieldHistory:[]});
         renderAll(); scheduleSave();
       });
       grid.appendChild(addBtn);
@@ -3793,8 +3939,8 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     currentCardText = null; cardTargetId = null;
     lastMinigame = null; msRangOrder = []; msRangExcluded = {};
     duelOrder = []; duelExcluded = {}; duelGame = null; duelWinners = {};
-    herWinner = null; herTarget = null; herStake = 50; herGame = null;
-    dorfHerTarget = null; dorfHerWinner = null; dorfHerStake = 50; dorfHerGame = null;
+    herWinner = null; herTarget = null; herStake = 50; herGame = null; herPick = {c:null, t:null};
+    dorfHerTarget = null; dorfHerWinner = null; dorfHerStake = 50; dorfHerGame = null; dorfPick = {c:null, t:null};
     dorfMinigame = null; dorfRangOrder = []; dorfRangExcluded = {};
     taxiOrt = null;
     wheelRotation = 0;
@@ -3807,7 +3953,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     msToastUsers = new Set(); msTatarUsers = {};
     dorfToastUsers = new Set(); dorfTatarUsers = {};
     gummiTargets = new Set();
-    kinderJoyModifier = null;
+    kinderJoyModifier = null; fahrradSlope = 0;
     woerstActive = false;
     boardMoveState = null; lastRollValue = null;
   }
@@ -4004,6 +4150,15 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     });
   }
   function goToNextTurn(skip){
+    // Powerbank: in jeder 3. Runde ein zusätzlicher Zug (einmal pro Runde)
+    if(!skip && !extraTurnPending){
+      const cur = currentPlayer();
+      if(cur && hasGadget(cur,'powerbank') && state.round%3===0 && gadgetState(cur).lastExtraRound!==state.round){
+        gadgetState(cur).lastExtraRound = state.round; extraTurnPending = true;
+        logEvent(cur, '🔋 Powerbank: zusätzlicher Zug');
+        try{ showAlert('🔋 Powerbank: '+cur.name+' darf direkt nochmal ziehen!'); }catch(e){}
+      }
+    }
     if(!skip && extraTurnPending){
       // Extrazug (Zug-Rad): dieselbe Person bleibt dran, es zählt kein neuer Zug.
       extraTurnPending = false;
@@ -4044,8 +4199,10 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
   let dorfToastUsers = new Set(), dorfTatarUsers = {};
   let gummiTargets = new Set();
   let kinderJoyModifier = null;
+  let fahrradSlope = 0;   // Fahrrad-Gadget: +1 bergab, -1 bergauf, 0 flach (gilt für den aktuellen Wurf)
   let woerstActive = false; // Wörscht vom Metzger: nächster Wurf 2×, besserer zählt
   let duelOrder = [], duelExcluded = {}, duelGame = null, duelWinners = {};
+  let herPick = {c:null, t:null}, dorfPick = {c:null, t:null};
   let herWinner = null, herTarget = null, herStake = 50, herGame = null;
   let dorfHerTarget = null, dorfHerWinner = null, dorfHerStake = 50, dorfHerGame = null;
   let dorfMinigame = null, dorfRangOrder = [], dorfRangExcluded = {};
@@ -4151,13 +4308,15 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         joint: JOINT_KEYS.map(j=>({k:j.k, label:j.label, on: !!cp.joint[j.k]})),
         weather: state.weather ? {type:state.weather.type, roundsLeft:state.weather.roundsLeft} : null,
         police: (getCurrentPolice()||{}).name || null,
-        rauchspot: (getCurrentRauchspot()||{}).name || null
+        rauchspot: (getCurrentRauchspot()||{}).name || null,
+        gadget: (()=>{ const g=gadgetById(cp.gadget); return g ? {icon:g.icon, name:g.name, text:g.text} : null; })()
       });
     }
     let mod = 0; const boosts = []; let lastRollContainer = null;
     if(state.sonnenscheinPending){ mod += 1; boosts.push('☀️ Sonnenschein: nächster Wurf +1'); }
     if(state.weather && state.weather.type==='schnee'){ mod -= 1; boosts.push('❄️ Schnee: Wurf -1 (noch '+state.weather.roundsLeft+' Runde'+(state.weather.roundsLeft===1?'':'n')+')'); }
     if(kinderJoyModifier!==null){ mod += kinderJoyModifier; boosts.push('🎰 Kinder Joy: '+(kinderJoyModifier>=0?'+':'')+kinderJoyModifier); }
+    if(hasGadget(cp,'fahrrad') && fahrradSlope!==0){ mod += (fahrradSlope>0 ? 2 : -1); boosts.push('🚲 Fahrrad: '+(fahrradSlope>0 ? 'bergab +2' : 'bergauf −1')); }
     if(woerstActive){ boosts.push('🌭 Wörscht vom Metzger: nächster Wurf 2×, besserer Wurf zählt'); }
     const hasKinderJoy = cp.inventory.includes('Kinder Joy');
     const showKinderJoyBtn = hasKinderJoy && kinderJoyModifier===null && lastRollValue==null;
@@ -4169,6 +4328,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       ${flowSteps(1)}
       <div class="flow-player">🎯 ${teamDot(cp)}${escapeHtml(cp.name)} ist dran</div>
       <div class="flow-question">Erst würfeln, um zu sehen wie weit du kommst.</div>
+      ${(hasGadget(cp,'fahrrad') && lastRollValue==null) ? `<div class="flow-items" id="fahrradRow"><span class="desc" style="margin:0 8px 0 0;">🚲 Fahrrad:</span>${[[1,'Bergab +2'],[0,'Flach'],[-1,'Bergauf −1']].map(o=>`<button type="button" class="pill-btn ${fahrradSlope===o[0]?'':'ghost'}" data-slope="${o[0]}">${o[1]}</button>`).join('')}</div>` : ''}
       ${(showKinderJoyBtn||showWoerstBtn) ? `<div class="flow-items">
         ${showKinderJoyBtn ? `<button class="pill-btn ghost" id="kinderJoyBtn">🎰 Kinder Joy einsetzen (±6, Slotmaschine)</button>` : ''}
         ${showWoerstBtn ? `<button class="pill-btn ghost" id="woerstBtn">🌭 Wörscht vom Metzger einsetzen (2× würfeln, besseren nehmen)</button>` : ''}
@@ -4193,6 +4353,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       </details>
       <div class="flow-next-wrap"><button class="pill-btn" id="toFieldChoiceBtn">Weiter zur Feldwahl →</button></div>
     `;
+    panel.querySelectorAll('#fahrradRow [data-slope]').forEach(b=>b.addEventListener('click', ()=>{ fahrradSlope = parseInt(b.dataset.slope,10)||0; renderWuerfelPanel(panel); }));
     if(showKinderJoyBtn){
       document.getElementById('kinderJoyBtn').addEventListener('click', ()=>{
         const btn = document.getElementById('kinderJoyBtn'); btn.disabled=true; btn.style.opacity='0.5';
@@ -4522,10 +4683,10 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       if(!regenBunkerStarted){
         bodyHtml += `<button class="pill-btn ghost regenbunker-start-btn">🌧️ Regen starten &amp; alle zum Bunker schicken</button>`;
       } else if(!regenBunkerWinnerId){
-        bodyHtml += `<p class="swap-note">Wer war zuerst am Bunker?</p><div class="winner-pick" id="regenBunkerPick"></div>`;
+        bodyHtml += `<p class="swap-note">Wer war zuerst am Bunker?${regenJackeHint()}</p><div class="winner-pick" id="regenBunkerPick"></div>`;
       } else {
         const rbWinner = playerById(regenBunkerWinnerId);
-        bodyHtml += `<p class="swap-note">Zuerst da: <b>${teamDot(rbWinner)}${escapeHtml(rbWinner?rbWinner.name:'–')}</b> → +20 Hash, alle anderen −5 Hash</p><button class="pill-btn ghost regenbunker-apply-btn">Anwenden &amp; Turnier im Bunker starten</button>`;
+        bodyHtml += `<p class="swap-note">Zuerst da: <b>${teamDot(rbWinner)}${escapeHtml(rbWinner?rbWinner.name:'–')}</b> → +20 Hash, alle anderen −5 Hash${regenJackeHint()}</p><button class="pill-btn ghost regenbunker-apply-btn">Anwenden &amp; Turnier im Bunker starten</button>`;
       }
     }
     const embedNeeded = !!currentCard.embed;
@@ -4733,6 +4894,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     }
   }
   // Regen-Ereignis (einmalig): Bunker-Sprint auswerten, alle in den Bunker, danach Abschluss-Turnier; mit dem Turnier endet der Regen
+  function regenJackeHint(){ return state.players.some(q=>hasGadget(q,'regenjacke')) ? '<br><small>🧥 Regenjacke: darf doppelt so schnell laufen wie alle anderen und verliert keinen Hash.</small>' : ''; }
   function applyRegenBunker(winnerId){
     const winner = playerById(winnerId);
     if(!winner) return false;
@@ -4740,6 +4902,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     const lines = [];
     state.players.forEach(p=>{
       if(p.id===winner.id){ p.hash = p.hash + 20; lines.push({name:p.name,color:p.color,text:'+20'}); logEvent(p, '+20 Hash (Bunker-Sprint gewonnen)'); }
+      else if(hasGadget(p,'regenjacke')){ lines.push({name:p.name,color:p.color,text:'0 🧥'}); logEvent(p, '🧥 Regenjacke: kein Hash-Verlust beim Bunker-Sprint'); }
       else { const before=p.hash; p.hash = Math.max(0, p.hash-5); lines.push({name:p.name,color:p.color,text:'-'+(before-p.hash)}); logEvent(p, '-'+(before-p.hash)+' Hash (Bunker-Sprint)'); }
     });
     renderPlayersGrid(); renderPlayerStrip(); scheduleSave();
@@ -4757,11 +4920,11 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       host.innerHTML = `<p class="desc">Es fängt an zu regnen: Alle rennen zum Bunker. Danach läuft das Abschluss-Turnier – wenn es vorbei ist, hört der Regen auf.</p><button class="pill-btn ghost" id="rgStart">🌧️ Regen starten &amp; alle zum Bunker schicken</button>`;
       host.querySelector('#rgStart').addEventListener('click', ()=>{ regenBunkerStarted = true; bcast('regen_bunker', {phase:'start', rainStart:true}); renderRegenBunkerPanel(host); });
     } else if(!w){
-      host.innerHTML = `<p class="swap-note">Wer war zuerst am Bunker?</p><div class="winner-pick" id="rgPick"></div>`;
+      host.innerHTML = `<p class="swap-note">Wer war zuerst am Bunker?${regenJackeHint()}</p><div class="winner-pick" id="rgPick"></div>`;
       const pick = host.querySelector('#rgPick');
       state.players.forEach(p=>{ const b = document.createElement('button'); b.innerHTML = teamDot(p)+escapeHtml(p.name); b.addEventListener('click', ()=>{ regenBunkerWinnerId = p.id; renderRegenBunkerPanel(host); }); pick.appendChild(b); });
     } else {
-      host.innerHTML = `<p class="swap-note">Zuerst da: <b>${teamDot(w)}${escapeHtml(w.name)}</b> → +20 Hash, alle anderen −5 Hash</p><button class="pill-btn ghost" id="rgApply">Anwenden &amp; Turnier im Bunker starten</button>`;
+      host.innerHTML = `<p class="swap-note">Zuerst da: <b>${teamDot(w)}${escapeHtml(w.name)}</b> → +20 Hash, alle anderen −5 Hash${regenJackeHint()}</p><button class="pill-btn ghost" id="rgApply">Anwenden &amp; Turnier im Bunker starten</button>`;
       const ab = host.querySelector('#rgApply');
       ab.addEventListener('click', ()=>{ if(!applyRegenBunker(regenBunkerWinnerId)) return; ab.textContent='Angewendet ✓'; ab.disabled=true; ab.style.opacity='0.6'; });
     }
@@ -5767,7 +5930,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         const pool = keys.filter(k=> give ? !cp.joint[k] : !!cp.joint[k]);
         if(!pool.length) return out(give ? cp.name+' hat schon alle Utensilien – nichts passiert.' : cp.name+' hat nichts zu verlieren – nichts passiert.');
         const k = rndOf(pool); const lbl = (JOINT_KEYS.find(j=>j.k===k)||{}).label || k;
-        cp.joint[k] = give;
+        if(give) giveJointItem(cp,k); else takeJointItem(cp,k);
         logEvent(cp, '🎡 Rad: '+lbl+(give?' bekommen':' verloren'));
         return out(cp.name+(give?' bekommt: ':' verliert: ')+lbl+'.', [wheelLine(cp,(give?'Utensil: +':'Utensil: −')+lbl)]);
       }
@@ -6044,6 +6207,20 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       <div id="polizeiSurrenderWrap"></div>
     `;
     bcast('police', {name: cp.name, color: cp.color});
+    // Spaßgetränk: einmal pro Spiel eine Kontrolle ignorieren
+    if(hasGadget(cp,'spassgetraenk') && !gadgetState(cp).policeUsed){
+      const box = document.createElement('div'); box.style.margin = '10px 0';
+      box.innerHTML = `<button class="pill-btn" id="seppelBtn">🍺 Spaßgetränk: Kontrolle ignorieren (einmalig)</button>`;
+      panel.insertBefore(box, panel.querySelector('#polizeiTicket'));
+      box.querySelector('#seppelBtn').addEventListener('click', ()=>{
+        pushUndo();
+        gadgetState(cp).policeUsed = true;
+        logEvent(cp, '🍺 Spaßgetränk: Polizeikontrolle ignoriert');
+        panel.innerHTML = `<h3 style="margin:0 0 4px; font-size:16px; font-weight:800;">🚓 Polizeikontrolle</h3><div class="result-banner"><div class="big">🍺</div><div class="sub">Spaßgetränk: Die Kontrolle wird ignoriert!</div></div>`;
+        bcast('police_result', {roll:6, name:cp.name, color:cp.color, text:'Spaßgetränk: Kontrolle ignoriert – nichts passiert!'});
+        renderPlayersGrid(); scheduleSave();
+      });
+    }
     function resolvePolizeiRoll(roll){
       document.getElementById('polizeiTicket').innerHTML = policeTicketHTML(14, roll);
       const resultDiv = document.getElementById('polizeiRollResult');
@@ -6110,7 +6287,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     });
     wrap.querySelectorAll('.joint-chip').forEach(btn=>{
       btn.addEventListener('click', ()=>{
-        cp.joint[btn.dataset.jk] = !cp.joint[btn.dataset.jk];
+        if(cp.joint[btn.dataset.jk]) takeJointItem(cp,btn.dataset.jk); else giveJointItem(cp,btn.dataset.jk);
         renderPlayersGrid(); scheduleSave();
         const jLabel = (JOINT_KEYS.find(j=>j.k===btn.dataset.jk)||{}).label||'Utensil';
         bcast('police_result', {roll, name:cp.name, color:cp.color, text:'Muss etwas abgeben …', given: (cp.joint[btn.dataset.jk]?'':'nicht mehr ')+jLabel+' abgegeben'});
@@ -6133,13 +6310,53 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     const moved = [];
     keys.forEach(k=>{
       if(!loser.joint[k]) return;
-      loser.joint[k] = false; winner.joint[k] = true;
+      takeJointItem(loser,k); giveJointItem(winner,k);
       moved.push(jointLabel(k));
       logEvent(winner, '+'+jointLabel(k)+' (Joint-Teil, Herausforderung gegen '+loser.name+')');
       logEvent(loser, '-'+jointLabel(k)+' (Joint-Teil, Herausforderung gegen '+winner.name+')');
     });
     return moved;
-  }  function renderHerausforderung(panel, opts){
+  }
+  // Item-Einsatz (gegenseitig, optional): Pick-Kennung 'i:Name' (Inventar) oder 'j:key' (Joint-Teil).
+  // pick.c = Item des Ziels, das die Herausforderer:in gewinnt; pick.t = Item der Herausforderer:in, das das Ziel gewinnt.
+  function itemPool(p){
+    const inv = p.inventory.filter((n,i,a)=>a.indexOf(n)===i).map(n=>({id:'i:'+n, label:n}));
+    return inv.concat(JOINT_KEYS.filter(j=>p.joint[j.k]).map(j=>({id:'j:'+j.k, label:j.label, jk:j.k})));
+  }
+  function itemPickLabel(id){ return !id ? '' : (id.slice(0,2)==='j:' ? jointLabel(id.slice(2)) : id.slice(2)); }
+  function itemPickValid(p, id){ return !!id && itemPool(p).some(x=>x.id===id); }
+  function itemStakeActive(cp, tg, pick){ return !!cp && !!tg && itemPickValid(tg, pick.c) && itemPickValid(cp, pick.t); }
+  function itemStakeList(cp, tg, pick){ return itemStakeActive(cp, tg, pick) ? ['Item: '+itemPickLabel(pick.c)+' ⇄ '+itemPickLabel(pick.t)] : []; }
+  function itemStakeHtml(cp, tg, pick, cls){
+    const pc = itemPool(cp), pt = itemPool(tg);
+    const head = `<p class="desc" style="margin-top:6px;">Item-Einsatz (optional, gegenseitig): Wer gewinnt, bekommt das Item der anderen Person. Bei 0 Hash ist das der einzige Gewinn.</p>`;
+    if(!pc.length || !pt.length){
+      const who = (!pc.length && !pt.length) ? 'Beide haben' : (escapeHtml((!pc.length ? cp : tg).name) + ' hat');
+      return head + `<p class="desc" style="opacity:.75;">Kein Item-Einsatz möglich: ${who} kein Item. Um Items zu spielen, muss man selbst eins haben.</p>`;
+    }
+    const row = (chooser, owner, pool, sel, side)=> `<p class="desc" style="margin:6px 0 2px;">${teamDot(chooser)}<b>${escapeHtml(chooser.name)}</b> wählt ein Item von ${teamDot(owner)}<b>${escapeHtml(owner.name)}</b>:</p><div class="joint-grid ${cls}">${pool.map(x=>`<button class="joint-chip item-chip ${sel===x.id?'on':''}" data-side="${side}" data-id="${escapeHtml(x.id)}">${x.jk ? jointIconSVG(x.jk,16)+' ' : ''}${escapeHtml(x.label)}</button>`).join('')}</div>`;
+    return head + row(cp, tg, pt, pick.c, 'c') + row(tg, cp, pc, pick.t, 't');
+  }
+  function bindItemChips(cls, pick, rerender){
+    document.querySelectorAll('.'+cls+' .item-chip').forEach(b=>{ b.addEventListener('click', ()=>{
+      const side = b.dataset.side, id = b.dataset.id;
+      pick[side] = pick[side]===id ? null : id;
+      rerender();
+    }); });
+  }
+  // Überträgt das gewählte Item vom Verlierer zum Gewinner (nur wenn beide Seiten gewählt haben und die Items noch da sind)
+  function applyItemStake(winner, loser, cp, tg, pick){
+    if(!itemStakeActive(cp, tg, pick)) return null;
+    const id = winner.id===cp.id ? pick.c : pick.t;
+    if(!itemPickValid(loser, id)) return null;
+    const name = itemPickLabel(id);
+    if(id.slice(0,2)==='j:'){ const k = id.slice(2); takeJointItem(loser,k); giveJointItem(winner,k); }
+    else { const i = loser.inventory.indexOf(name); if(i<0) return null; loser.inventory.splice(i,1); winner.inventory.push(name); }
+    logEvent(winner, '+'+name+' (Item-Einsatz, Herausforderung gegen '+loser.name+')');
+    logEvent(loser, '-'+name+' (Item-Einsatz, Herausforderung gegen '+winner.name+')');
+    return name;
+  }
+  function renderHerausforderung(panel, opts){
     const cp = currentPlayer();
     const others = cp ? state.players.filter(p=>p.id!==cp.id) : [];
     if(!cp || others.length===0){ panel.innerHTML = `<p class="desc">Mindestens 2 Spieler:innen nötig.</p>`; return; }
@@ -6155,6 +6372,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       <div class="num-input-row"><label>Einsatz</label><input type="number" id="herStakeInput" min="0" value="${herStake}"></div>
       <p class="desc" style="margin-top:-6px;">Die herausgeforderte Person (<b>${escapeHtml(target.name)}</b>) legt den Einsatz fest. Gewinner:in bekommt <b>+<span id="herStakeShowW">${herStake}</span></b>, Verlierer:in <b>-<span id="herStakeShowL">${herStake}</span></b>.</p>
       ${jointStakeHtml(cp, target, herJoint, 'her-joint')}
+      ${itemStakeHtml(cp, target, herPick, 'her-item')}
       <div style="margin:12px 0;">
         ${herGame
           ? `<p class="desc">Gespielt wird: <b>${escapeHtml(herGame.name)}</b>${herGame.desc?` <span style="color:var(--text-faint);">– ${escapeHtml(herGame.desc)}</span>`:''} <button class="pill-btn subtle" id="herGameReroll" style="margin-left:6px; padding:5px 12px; font-size:11.5px;">🎲 anderes Spiel</button>${pgPlayBtn(herGame,'her-pg-play')}</p>`
@@ -6166,7 +6384,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       ` : `<p class="desc" style="margin-top:10px;">Erst eine Person auswählen.</p>`}
     `;
     document.getElementById('herTargetSel').addEventListener('change', e=>{
-      herTarget = e.target.value || null; herWinner = null; herGame = null; herStake = 50; herJoint = [];
+      herTarget = e.target.value || null; herWinner = null; herGame = null; herStake = 50; herJoint = []; herPick = {c:null, t:null};
       renderHerausforderung(panel, opts);
       const t = herTarget ? playerById(herTarget) : null;
       if(t){ bcast('challenge_setup', {challenger:{name:cp.name,color:cp.color}, target:{name:t.name,color:t.color}}); }
@@ -6177,10 +6395,11 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       const w = document.getElementById('herStakeShowW'); if(w) w.textContent = herStake;
       const l = document.getElementById('herStakeShowL'); if(l) l.textContent = herStake;
     });
-    document.querySelectorAll('.her-joint .joint-chip').forEach(b=>{ b.addEventListener('click', ()=>{ const k = b.dataset.jk; herJoint = herJoint.includes(k) ? herJoint.filter(x=>x!==k) : herJoint.concat(k); renderHerausforderung(panel, opts); if(herGame) bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: herGame.name, finalDesc: herGame.desc||'', stake:herStake, jointStake:herJoint.map(jointLabel), challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}}); }); });
+    document.querySelectorAll('.her-joint .joint-chip').forEach(b=>{ b.addEventListener('click', ()=>{ const k = b.dataset.jk; herJoint = herJoint.includes(k) ? herJoint.filter(x=>x!==k) : herJoint.concat(k); renderHerausforderung(panel, opts); if(herGame) bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: herGame.name, finalDesc: herGame.desc||'', stake:herStake, jointStake:herJoint.map(jointLabel).concat(itemStakeList(cp,target,herPick)), challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}}); }); });
+    bindItemChips('her-item', herPick, ()=>{ renderHerausforderung(panel, opts); if(herGame) bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: herGame.name, finalDesc: herGame.desc||'', stake:herStake, jointStake:herJoint.map(jointLabel).concat(itemStakeList(cp,target,herPick)), challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}}); });
     const drawGame = ()=>{
       herGame = drawMinigame(2);
-      bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: herGame.name, finalDesc: herGame.desc||'', stake:herStake, jointStake:herJoint.map(jointLabel), challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}});
+      bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: herGame.name, finalDesc: herGame.desc||'', stake:herStake, jointStake:herJoint.map(jointLabel).concat(itemStakeList(cp,target,herPick)), challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}});
       renderHerausforderung(panel, opts);
     };
     const drawBtn = document.getElementById('herGameDraw'); if(drawBtn) drawBtn.addEventListener('click', drawGame);
@@ -6196,11 +6415,12 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       let stake = herStake;
       pushUndo(); stake = Math.min(stake, loser.hash); winner.hash += stake; loser.hash -= stake; logEvent(winner, '+'+stake+' Hash (Herausforderung gegen '+loser.name+')'); logEvent(loser, '-'+stake+' Hash (Herausforderung gegen '+winner.name+')');
       const movedJ = applyJointStake(winner, loser, herJoint);
+      const movedI = applyItemStake(winner, loser, cp, target, herPick); if(movedI) movedJ.push('Item '+movedI);
       renderPlayersGrid(); renderPlayerStrip(); scheduleSave();
-      document.getElementById('herApplyResult').innerHTML = `<p class="swap-note">✓ Angewendet.${movedJ.length?' Joint-Teile: '+movedJ.join(', '):''}</p>`;
+      document.getElementById('herApplyResult').innerHTML = `<p class="swap-note">✓ Angewendet.${movedJ.length?' Übertragen: '+movedJ.join(', '):''}</p>`;
       { const wl = {name:winner.name,color:winner.color,text:'+'+stake+' 🏆'}, ll = {name:loser.name,color:loser.color,text:'-'+stake};
         bcast('result', {duel:true, pairs:[{winner:wl, loser:ll}], title:'Herausforderung – Ergebnis', icon:'🗡️', lines:[wl,ll], stake:stake, jointStake:movedJ, challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}}); }
-      herJoint=[]; herTarget=null; herWinner=null; herGame=null; herStake=50;
+      herJoint=[]; herTarget=null; herWinner=null; herGame=null; herStake=50; herPick={c:null, t:null};
     });
   }
 
@@ -6215,7 +6435,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     let html = `<h3 style="margin:0 0 4px; font-size:16px; font-weight:800;">${ortEmoji(ort)} ${escapeHtml(ort.name)}</h3><p class="desc">${escapeHtml(ort.note||'')}</p>`;
     let extraButtons = '';
     if(kerzeMode && cp){
-      const kCost = ort.mitnehmenKosten;
+      const kCost = priceFor(cp, ort.mitnehmenKosten, 'kirche');
       if(kerzeDone) extraButtons += `<span class="pill-btn subtle">✓ Kerze mitgenommen – das Licht ist aus</span>`;
       else if(cp.hash < kCost) extraButtons += `<span class="pill-btn subtle">🕯️ Kerze mitnehmen (−${kCost} Hash) – zu wenig Hash</span>`;
       else extraButtons += `<button class="pill-btn ghost" id="kerzeBtn">🕯️ Kerze mitnehmen (−${kCost} Hash)</button>`;
@@ -6238,7 +6458,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     const linkedShop = ort.shopId ? state.shops.find(s=>s.id===ort.shopId) : null;
     if(linkedShop && linkedShop.name==='Waldfest' && cp){
       const others = Math.max(0, state.players.length-1);
-      let cost = 5*others;
+      let cost = hasGadget(cp,'seppelsche') ? 0 : 5*others;   // Seppelsche: Bier beim Waldfest gratis
       const wasUnlocked = linkedShop.unlocked;
       if(!ortAutoCharged.has(visitKey)){
         ortAutoCharged.add(visitKey);
@@ -6257,7 +6477,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     // Balancing 2.3.67: Joint-Bau an jedem Ort (vorher nur am wechselnden Rauchspot, den man mit exakter Landung treffen musste,
     // das war praktisch unerreichbar). Am aktuellen Rauchspot ist der Joint halb so teuer.
     const isRauchspot = rauchspot && rauchspot.id===ort.id;
-    const jointCost = jointCostFor(isRauchspot);
+    const jointCost = jointCostFor(isRauchspot, cp);
     const jointDoneHere = cp && JOINT_KEYS.every(j=>cp.joint[j.k]) && cp.hash>=jointCost;
     if(jointDoneHere){ extraButtons += `<button class="pill-btn ghost joint-build-btn">🚬 Joint bauen${isRauchspot?' (Rauchspot-Preis)':''} (−${jointCost} Hash, setzt nächste Runde aus)</button>`; }
     else if(cp && cp.jointOpen!==undefined && JOINT_KEYS.some(j=>cp.joint[j.k])){ extraButtons += `<span class="pill-btn subtle">🚬 Joint bauen: noch nicht alle Items oder Hash &lt; ${jointCost}${isRauchspot?' (Rauchspot-Preis)':''}</span>`; }
@@ -6266,9 +6486,9 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     if(kb) kb.addEventListener('click', ()=>{
       if(kerzeTaken.has(visitKey)) return;
       pushUndo();
-      const paid = -kamelSchutz(cp, -ort.mitnehmenKosten, 'Klingelbeutel');
+      const paid = -kamelSchutz(cp, -priceFor(cp, ort.mitnehmenKosten, 'kirche'), 'Klingelbeutel');
       cp.hash = Math.max(0, cp.hash - paid);
-      cp.joint.feuerkerze = true;
+      giveJointItem(cp,'feuerkerze');
       kerzeTaken.add(visitKey);
       logEvent(cp, '🕯️ Kerze aus '+ort.name+' mitgenommen (−'+paid+' Hash Klingelbeutel)');
       renderPlayersGrid(); renderPlayerStrip(); scheduleSave();
@@ -6276,10 +6496,10 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       bcast('ort', {icon:'🕯️', name: ort.name, note: cp.name+' nimmt eine Kerze mit. Das Licht geht aus.', player:{name:cp.name,color:cp.color}, extra: '−'+paid+' Hash', lightsOut:true});
     });
     const jb = document.getElementById('jointBtn');
-    if(jb) jb.addEventListener('click', ()=>{ cp.joint[ort.jointKey]=!cp.joint[ort.jointKey]; renderPlayersGrid(); scheduleSave(); renderOrtResolution(panel, ort); });
+    if(jb) jb.addEventListener('click', ()=>{ if(cp.joint[ort.jointKey]){ if(!giveJointItem(cp,ort.jointKey)){ cp.joint[ort.jointKey]=false; if(cp.jointN) delete cp.jointN[ort.jointKey]; } } else giveJointItem(cp,ort.jointKey); renderPlayersGrid(); scheduleSave(); renderOrtResolution(panel, ort); });
     const jbb = panel.querySelector('.joint-build-btn');
     if(jbb) jbb.addEventListener('click', ()=>{
-      pushUndo(); withRawHash(()=>{ cp.hash = Math.max(0, cp.hash - jointCost); }); JOINT_KEYS.forEach(j=>{ cp.joint[j.k] = JOINT_KEEP_ITEMS.includes(j.k); }); logEvent(cp, '🚬 Joint gebaut (−'+jointCost+' Hash, Tip und Feuer/Kerze verbraucht)');
+      pushUndo(); withRawHash(()=>{ cp.hash = Math.max(0, cp.hash - jointCost); }); JOINT_KEYS.forEach(j=>{ if(!JOINT_KEEP_ITEMS.includes(j.k)) takeJointItem(cp,j.k); }); logEvent(cp, '🚬 Joint gebaut (−'+jointCost+' Hash, Tip und Feuer/Kerze verbraucht)');
       cp.skipNextTurn = true;
       cp.jointsBuilt = (cp.jointsBuilt||0)+1;
       renderPlayersGrid(); renderPlayerStrip(); scheduleSave();
@@ -6303,16 +6523,16 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
 
   function frediStateFor(cp){
     if(cp.joint.papes && cp.joint.tip) return 'owned';
-    return cp.hash >= FREDI_PRICE ? 'offer' : 'poor';
+    return cp.hash >= priceFor(cp,FREDI_PRICE,'fredi') ? 'offer' : 'poor';
   }
   function renderFrediOffer(container, cp, roundCost){
     const already = cp.joint.papes && cp.joint.tip;
-    const poor = cp.hash < FREDI_PRICE;
+    const poor = cp.hash < priceFor(cp,FREDI_PRICE,'fredi');
     container.innerHTML = `
       <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--sep);">
-        <p class="swap-note">🎺 ÖÖÖÖÖP! Fredi fragt: „Willst du die Pfeife für 10 Bier (${FREDI_PRICE} Hash) haben?“</p>
+        <p class="swap-note">🎺 ÖÖÖÖÖP! Fredi fragt: „Willst du die Pfeife für 10 Bier (${priceFor(cp,FREDI_PRICE,'fredi')} Hash) haben?“</p>
         ${already ? `<span class="pill-btn subtle">✓ Schon genommen</span>` : `
-          <button class="pill-btn ghost" id="frediYesBtn" ${poor?'disabled':''}>Ja, kaufen (−${FREDI_PRICE} Hash) 🎁</button>
+          <button class="pill-btn ghost" id="frediYesBtn" ${poor?'disabled':''}>Ja, kaufen (−${priceFor(cp,FREDI_PRICE,'fredi')} Hash) 🎁</button>
           <button class="pill-btn subtle" id="frediNoBtn" style="margin-left:6px;">Nein danke</button>
           ${poor ? `<span class="swap-note" style="display:block; margin-top:6px;">Du hast nur ${cp.hash} Hash.</span>` : ''}
         `}
@@ -6320,11 +6540,11 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     `;
     if(!already){
       document.getElementById('frediYesBtn').addEventListener('click', ()=>{
-        if(cp.hash < FREDI_PRICE || (cp.joint.papes && cp.joint.tip)) return;
+        if(cp.hash < priceFor(cp,FREDI_PRICE,'fredi') || (cp.joint.papes && cp.joint.tip)) return;
         pushUndo();
-        cp.hash = Math.max(0, cp.hash - FREDI_PRICE);
-        cp.joint.papes = true; cp.joint.tip = true;
-        logEvent(cp, '🎺 Fredis Pfeife gekauft (−'+FREDI_PRICE+' Hash, Papes + Tip)');
+        cp.hash = Math.max(0, cp.hash - priceFor(cp,FREDI_PRICE,'fredi'));
+        giveJointItem(cp,'papes'); giveJointItem(cp,'tip');
+        logEvent(cp, '🎺 Fredis Pfeife gekauft (−'+priceFor(cp,FREDI_PRICE,'fredi')+' Hash, Papes + Tip)');
         renderPlayersGrid(); renderPlayerStrip(); scheduleSave();
         bcast('waldfest', {player:{name:cp.name,color:cp.color}, cost:roundCost, fredi:'bought', hash:cp.hash, keep:true});
         renderFrediOffer(container, cp, roundCost);
@@ -6346,9 +6566,9 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         <div class="item-row" data-item="${it.id}" style="border-top:none; padding-top:0;">
           <div class="item-body" style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--surface-alt); border-radius:10px; padding:10px 12px;">
             <div style="min-width:0;">
-              <div style="font-weight:700; font-size:13.5px;">${escapeHtml(it.name)}${isBiergarten && /bembel/i.test(it.name) ? ' <span style="font-weight:400; color:var(--text-faint);">(zu zweit, je ${BEMBEL_PRICE} Hash)</span>' : ''}</div>
+              <div style="font-weight:700; font-size:13.5px;">${escapeHtml(it.name)}${isBiergarten && /bembel/i.test(it.name) ? ` <span style="font-weight:400; color:var(--text-faint);">(zu zweit, je ${priceFor(currentPlayer(),BEMBEL_PRICE,'biergarten')} Hash)</span>` : ''}</div>
               ${it.effect ? `<div style="font-size:11.5px; color:var(--text-faint); margin-top:2px; line-height:1.4;">${escapeHtml(it.effect)}</div>` : ''}
-              <div style="font-size:12px; color:var(--accent); font-weight:700; margin-top:4px;">${it.price!=null?it.price+' Hash':'–'}</div>
+              <div style="font-size:12px; color:var(--accent); font-weight:700; margin-top:4px;">${it.price!=null?priceFor(currentPlayer(),it.price,isBiergarten?'biergarten':'shop')+' Hash'+(priceFor(currentPlayer(),it.price,isBiergarten?'biergarten':'shop')!==it.price?' (Rabatt)':''):'–'}</div>
             </div>
             <button class="pill-btn ghost mini-buy-btn" style="flex-shrink:0;">Kaufen</button>
           </div>
@@ -6356,7 +6576,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       `).join('') || '<p class="inv-empty">Keine Artikel hinterlegt.</p>'}</div>
       <div id="bembelWrap"></div>
     `;
-    bcast('shop', {shopName: shop.name, items: visibleItems.map(it=>({id:it.id, name:it.name, price:it.price, effect:it.effect||''}))});
+    bcast('shop', {shopName: shop.name, items: visibleItems.map(it=>({id:it.id, name:it.name, price:priceFor(currentPlayer(),it.price,isBiergarten?'biergarten':'shop'), effect:it.effect||''}))});
     container.querySelectorAll('.item-row').forEach(row=>{
       const it = shop.items.find(x=>x.id===row.dataset.item);
       const btn = row.querySelector('.mini-buy-btn');
@@ -6371,11 +6591,11 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
           renderBembelFlow(container, shop, it, buyer);
           return;
         }
-        const cost = it.price||0;
+        const cost = priceFor(buyer, it.price||0, isBiergarten?'biergarten':'shop');
         if(cost>0 && buyer.hash<cost){ showAlert(`${buyer.name} hat nicht genug Hash (${buyer.hash}/${cost}).`); return; }
         pushUndo();
         buyer.hash = Math.max(0, buyer.hash-cost); buyer.inventory.push(it.name);
-        if(it.grantsJoint){ it.grantsJoint.forEach(k=>{ buyer.joint[k]=true; }); }
+        if(it.grantsJoint){ it.grantsJoint.forEach(k=>{ giveJointItem(buyer,k); }); }
         const isToast = /klosterberg toast/i.test(it.name);
         if(isToast){ buyer.skipNextTurn = true; }
         logEvent(buyer, '-'+cost+' Hash (Kauf: '+it.name+' bei '+shop.name+')');
@@ -6406,12 +6626,13 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       document.getElementById('bembelConfirmBtn').addEventListener('click', ()=>{
         const partner = playerById(bembelPartnerId);
         if(!partner) return;
-        if(buyer.hash<BEMBEL_PRICE || partner.hash<BEMBEL_PRICE){ showAlert(`Beide brauchen mindestens ${BEMBEL_PRICE} Hash (${buyer.name}: ${buyer.hash}, ${partner.name}: ${partner.hash}).`); return; }
+        const bpB = priceFor(buyer,BEMBEL_PRICE,'biergarten'), bpP = priceFor(partner,BEMBEL_PRICE,'biergarten');
+        if(buyer.hash<bpB || partner.hash<bpP){ showAlert(`Beide brauchen mindestens ${BEMBEL_PRICE} Hash (${buyer.name}: ${buyer.hash}, ${partner.name}: ${partner.hash}).`); return; }
         pushUndo();
-        buyer.hash -= BEMBEL_PRICE; partner.hash -= BEMBEL_PRICE; buyer.inventory.push(it.name);
+        buyer.hash -= bpB; partner.hash -= bpP; buyer.inventory.push(it.name);
         const wasUnlocked = shop.unlocked; shop.unlocked = true;
-        logEvent(buyer, '-'+BEMBEL_PRICE+' Hash (Kauf: '+it.name+' bei '+shop.name+', geteilt mit '+partner.name+')');
-        logEvent(partner, '-'+BEMBEL_PRICE+' Hash (Kauf: '+it.name+' bei '+shop.name+', geteilt mit '+buyer.name+')');
+        logEvent(buyer, '-'+bpB+' Hash (Kauf: '+it.name+' bei '+shop.name+', geteilt mit '+partner.name+')');
+        logEvent(partner, '-'+bpP+' Hash (Kauf: '+it.name+' bei '+shop.name+', geteilt mit '+buyer.name+')');
         renderPlayersGrid(); renderPlayerStrip(); scheduleSave();
         bcast('bembel_share', {a:{name:buyer.name,color:buyer.color}, b:{name:partner.name,color:partner.color}});
         bembelStage = 'martin';
@@ -6430,8 +6651,8 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       `;
       bcast('ort', {icon:'🚬', name:'Biergarten', note:'Martin ist da und raucht eine Kippe – fragt ihr, ob ihr auch eine bekommt?', player:{name:buyer.name,color:buyer.color}});
       document.getElementById('bembelAskBtn').addEventListener('click', ()=>{
-        buyer.joint.tabak=true; buyer.joint.tip=true;
-        if(partner){ partner.joint.tabak=true; partner.joint.tip=true; }
+        giveJointItem(buyer,'tabak'); giveJointItem(buyer,'tip');
+        if(partner){ giveJointItem(partner,'tabak'); giveJointItem(partner,'tip'); }
         renderPlayersGrid(); scheduleSave();
         bcast('result', {title:'Martin rückt Kippen raus!', icon:'🚬', lines:[{name:buyer.name,color:buyer.color,text:'Tabak + Tip'},...(partner?[{name:partner.name,color:partner.color,text:'Tabak + Tip'}]:[])]});
         bembelStage=null; bembelPartnerId=null;
@@ -6448,18 +6669,19 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
   function renderBunkerPanel(container, skipBcast){
     const b = state.bunker; const cp = currentPlayer();
     let html = '';
-    if(b.hasItems){ html += `<button class="pill-btn ghost" id="bunkerTakeBtn">Papes &amp; Tabak mitnehmen (−${BUNKER_PRICE} Hash, bleibt hier liegen)</button>`; }
+    if(b.hasItems){ html += `<button class="pill-btn ghost" id="bunkerTakeBtn">Papes &amp; Tabak mitnehmen (−${priceFor(cp,BUNKER_PRICE,'bunker')} Hash, bleibt hier liegen)</button>`; }
     if(b.pot>0){ html += `<button class="pill-btn ghost" id="bunkerStealBtn">${b.pot} Hash hier klauen</button>`; }
     if(!b.hasItems && b.pot===0){ html = `<p class="desc">Gerade nichts hier.</p>`; }
     container.innerHTML = `<h4 style="margin:16px 0 8px; font-size:14px; font-weight:800; color:var(--text-soft);">Bunker</h4>${html}`;
     if(!skipBcast) bcast('bunker', { hasItems:b.hasItems, pot:b.pot });
     const takeBtn = document.getElementById('bunkerTakeBtn');
     if(takeBtn) takeBtn.addEventListener('click', ()=>{
-      if(!cp || cp.hash<BUNKER_PRICE){ showAlert('Zum Mitnehmen sind mindestens '+BUNKER_PRICE+' Hash nötig.'); return; }
-      pushUndo(); logEvent(cp, '-'+BUNKER_PRICE+' Hash (Bunker: Papes & Tabak mitgenommen)');
-      cp.hash = Math.max(0, cp.hash-BUNKER_PRICE);
-      cp.joint.papes = true; cp.joint.tabak = true;
-      b.hasItems=false; b.pot+=BUNKER_PRICE;
+      const bp = cp ? priceFor(cp,BUNKER_PRICE,'bunker') : BUNKER_PRICE;
+      if(!cp || cp.hash<bp){ showAlert('Zum Mitnehmen sind mindestens '+bp+' Hash nötig.'); return; }
+      pushUndo(); logEvent(cp, '-'+bp+' Hash (Bunker: Papes & Tabak mitgenommen)');
+      cp.hash = Math.max(0, cp.hash-bp);
+      giveJointItem(cp,'papes'); giveJointItem(cp,'tabak');
+      b.hasItems=false; b.pot+=bp;
       renderPlayersGrid(); renderPlayerStrip(); scheduleSave();
       bcast('bunker', { hasItems:b.hasItems, pot:b.pot, action:'take', player:{name:cp.name,color:cp.color} });
       renderBunkerPanel(container, true);
@@ -6610,6 +6832,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
           <div class="num-input-row"><label>Einsatz</label><input type="number" id="dorfStakeInput" min="0" value="${dorfHerStake}"></div>
           <p class="desc" style="margin-top:-6px;">Die herausgeforderte Person (<b>${escapeHtml(target.name)}</b>) legt den Einsatz fest. Gewinner:in bekommt <b>+<span id="dorfStakeShowW">${dorfHerStake}</span></b>, Verlierer:in <b>-<span id="dorfStakeShowL">${dorfHerStake}</span></b>.</p>
           ${jointStakeHtml(cp, target, dorfHerJoint, 'dorf-joint')}
+          ${itemStakeHtml(cp, target, dorfPick, 'dorf-item')}
           <div style="margin:12px 0;">
             ${dorfHerGame
               ? `<p class="desc">Gespielt wird: <b>${escapeHtml(dorfHerGame.name)}</b>${dorfHerGame.desc?` <span style="color:var(--text-faint);">– ${escapeHtml(dorfHerGame.desc)}</span>`:''} <button class="pill-btn subtle" id="dorfHerGameReroll" style="margin-left:6px; padding:5px 12px; font-size:11.5px;">🎲 anderes Spiel</button>${pgPlayBtn(dorfHerGame,'dorf-pg-play')}</p>`
@@ -6621,7 +6844,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
           ` : `<p class="desc" style="margin-top:10px;">Erst eine Person auswählen.</p>`}
         `;
         document.getElementById('dorfTargetSel').addEventListener('change', e=>{
-          dorfHerTarget = e.target.value || null; dorfHerWinner = null; dorfHerGame = null; dorfHerStake = 50; dorfHerJoint = [];
+          dorfHerTarget = e.target.value || null; dorfHerWinner = null; dorfHerGame = null; dorfHerStake = 50; dorfHerJoint = []; dorfPick = {c:null, t:null};
           renderInner();
           const t = dorfHerTarget ? playerById(dorfHerTarget) : null;
           if(t){ bcast('challenge_setup', {scene:(/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz'), stake:dorfHerStake, challenger:{name:cp.name,color:cp.color}, target:{name:t.name,color:t.color}}); }
@@ -6635,13 +6858,14 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         document.getElementById('dorfStakeInput').addEventListener('change', ()=>{
           const sc = (/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz');
           const ch = {name:cp.name,color:cp.color}, tg = {name:target.name,color:target.color};
-          if(dorfHerGame) bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: dorfHerGame.name, finalDesc: dorfHerGame.desc||'', scene:sc, stake:dorfHerStake, jointStake:dorfHerJoint.map(jointLabel), challenger:ch, target:tg});
+          if(dorfHerGame) bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: dorfHerGame.name, finalDesc: dorfHerGame.desc||'', scene:sc, stake:dorfHerStake, jointStake:dorfHerJoint.map(jointLabel).concat(itemStakeList(cp,target,dorfPick)), challenger:ch, target:tg});
           else bcast('challenge_setup', {scene:sc, stake:dorfHerStake, challenger:ch, target:tg});
         });
-        document.querySelectorAll('.dorf-joint .joint-chip').forEach(b=>{ b.addEventListener('click', ()=>{ const k = b.dataset.jk; dorfHerJoint = dorfHerJoint.includes(k) ? dorfHerJoint.filter(x=>x!==k) : dorfHerJoint.concat(k); renderInner(); if(dorfHerGame) bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: dorfHerGame.name, finalDesc: dorfHerGame.desc||'', scene:(/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz'), stake:dorfHerStake, jointStake:dorfHerJoint.map(jointLabel), challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}}); }); });
+        document.querySelectorAll('.dorf-joint .joint-chip').forEach(b=>{ b.addEventListener('click', ()=>{ const k = b.dataset.jk; dorfHerJoint = dorfHerJoint.includes(k) ? dorfHerJoint.filter(x=>x!==k) : dorfHerJoint.concat(k); renderInner(); if(dorfHerGame) bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: dorfHerGame.name, finalDesc: dorfHerGame.desc||'', scene:(/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz'), stake:dorfHerStake, jointStake:dorfHerJoint.map(jointLabel).concat(itemStakeList(cp,target,dorfPick)), challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}}); }); });
+        bindItemChips('dorf-item', dorfPick, ()=>{ renderInner(); if(dorfHerGame) bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: dorfHerGame.name, finalDesc: dorfHerGame.desc||'', scene:(/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz'), stake:dorfHerStake, jointStake:dorfHerJoint.map(jointLabel).concat(itemStakeList(cp,target,dorfPick)), challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}}); });
         const drawGame = ()=>{
           dorfHerGame = drawMinigame(2);
-          bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: dorfHerGame.name, finalDesc: dorfHerGame.desc||'', scene:(/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz'), stake:dorfHerStake, jointStake:dorfHerJoint.map(jointLabel), challenger:{name:cp.name,color:cp.color}, target:{name:(playerById(dorfHerTarget)||{}).name, color:(playerById(dorfHerTarget)||{}).color}});
+          bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: dorfHerGame.name, finalDesc: dorfHerGame.desc||'', scene:(/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz'), stake:dorfHerStake, jointStake:dorfHerJoint.map(jointLabel).concat(itemStakeList(cp,target,dorfPick)), challenger:{name:cp.name,color:cp.color}, target:{name:(playerById(dorfHerTarget)||{}).name, color:(playerById(dorfHerTarget)||{}).color}});
           renderInner();
         };
         const drawBtn = document.getElementById('dorfHerGameDraw'); if(drawBtn) drawBtn.addEventListener('click', drawGame);
@@ -6657,12 +6881,13 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
           let stake = dorfHerStake;
           pushUndo(); stake = Math.min(stake, loser.hash); winner.hash += stake; loser.hash -= stake; logEvent(winner, '+'+stake+' Hash (Herausforderung gegen '+loser.name+')'); logEvent(loser, '-'+stake+' Hash (Herausforderung gegen '+winner.name+')');
           const movedJ = applyJointStake(winner, loser, dorfHerJoint);
+          const movedI = applyItemStake(winner, loser, cp, target, dorfPick); if(movedI) movedJ.push('Item '+movedI);
           state.dorfplatzChallengeCount++;
           renderPlayersGrid(); renderPlayerStrip(); scheduleSave();
           document.getElementById('dorfHerResult').innerHTML = `<p class="swap-note">✓ Angewendet. (${state.dorfplatzChallengeCount}/4 bis zum nächsten Turnier)</p>`;
           { const wl = {name:winner.name,color:winner.color,text:'+'+stake+' 🏆'}, ll = {name:loser.name,color:loser.color,text:'-'+stake};
             bcast('result', {duel:true, pairs:[{winner:wl, loser:ll}], title: ort.name+' – Ergebnis', icon:'🗡️', lines:[wl,ll], scene:(/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz'), stake:stake, jointStake:movedJ, challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}}); dorfHerJoint=[]; }
-          dorfHerTarget=null; dorfHerWinner=null; dorfHerGame=null; dorfHerStake=50;
+          dorfHerTarget=null; dorfHerWinner=null; dorfHerGame=null; dorfHerStake=50; dorfPick={c:null, t:null};
         });
       }
       renderInner();
@@ -7111,8 +7336,10 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     window.addEventListener('resize', ()=>{ if(isOpen) scaleFrame(); });
   })();
   const newGameModal = document.getElementById('newGameModal');
-  let ngCount = 2, ngNames = [], ngColors = [], ngChars = [];
+  let ngCount = 2, ngNames = [], ngColors = [], ngChars = [], ngGadgets = [];
   function renderNgNames(){
+    while(ngGadgets.length<ngCount) ngGadgets.push(null);
+    ngGadgets.length = ngCount;
     while(ngNames.length<ngCount) ngNames.push(`Spieler ${ngNames.length+1}`);
     ngNames.length = ngCount;
     while(ngChars.length<ngCount) ngChars.push(null);
@@ -7124,6 +7351,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     wrap.innerHTML = ngNames.map((n,idx)=>`
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
         ${CHAR_LIB.length ? `<button type="button" class="ng-char-btn" data-idx="${idx}" title="Charakter wählen">${charAvatarHtml(ngChars[idx])}${ngChars[idx]?'':'<span>Wählen</span>'}</button>` : ''}
+        <button type="button" class="ng-gadget-btn" data-idx="${idx}" title="Gadget wählen"><span class="gi">${ngGadgets[idx]?gadgetById(ngGadgets[idx]).icon:'🎒'}</span><span>${ngGadgets[idx]?escapeHtml(gadgetById(ngGadgets[idx]).name):'Gadget'}</span></button>
         <input class="ng-name-input" data-idx="${idx}" maxlength="18" value="${escapeAttr(n)}" placeholder="Spieler ${idx+1}" style="flex:1; min-width:0;">
         <div style="display:flex; gap:4px; flex-wrap:wrap; max-width:132px; justify-content:flex-end;">
           ${TEAM_COLORS.map(c=>`<button class="ng-color-swatch" data-idx="${idx}" data-c="${c}" style="width:20px; height:20px; border-radius:50%; background:${c}; border:${ngColors[idx]===c?'2.5px solid var(--text)':'2px solid transparent'}; opacity:${ngColors[idx]===c?'1':'0.4'}; padding:0; cursor:pointer;"></button>`).join('')}
@@ -7132,13 +7360,17 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     `).join('');
     wrap.querySelectorAll('.ng-name-input').forEach(inp=>{ inp.addEventListener('input', e=>{ ngNames[parseInt(e.target.dataset.idx,10)]=e.target.value; }); });
     wrap.querySelectorAll('.ng-color-swatch').forEach(btn=>{ btn.addEventListener('click', ()=>{ ngColors[parseInt(btn.dataset.idx,10)]=btn.dataset.c; renderNgNames(); }); });
+    wrap.querySelectorAll('.ng-gadget-btn').forEach(btn=>{ btn.addEventListener('click', ()=>{
+      const i = parseInt(btn.dataset.idx,10);
+      openGadgetPicker(ngGadgets[i], ngGadgets.filter((g,k)=>g&&k!==i), id=>{ ngGadgets[i] = id; renderNgNames(); });
+    }); });
     wrap.querySelectorAll('.ng-char-btn').forEach(btn=>{ btn.addEventListener('click', ()=>{
       const i = parseInt(btn.dataset.idx,10);
       openCharPicker(ngChars[i]&&ngChars[i].id, ngChars.filter((c,k)=>c&&k!==i).map(c=>c.id), ch=>{
         ngChars[i] = ch;
-        if(/^Spieler \d+$/.test(ngNames[i]||'')) ngNames[i] = ch.name.slice(0,18);
+        if(/^Spieler \d+$/.test(ngNames[i]||'')) ngNames[i] = (ch.baseName||ch.name).slice(0,18);
         renderNgNames();
-      });
+      }, ngChars[i]&&ngChars[i].variantId);
     }); });
   }
   // ---------- Startmenü: Modus, Startkapital, Minispiele ----------
@@ -7222,6 +7454,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     ngNames = state.players.slice(0,ngCount).map(p=>p.name);
     ngColors = state.players.slice(0,ngCount).map((p,idx)=>p.color||TEAM_COLORS[idx%TEAM_COLORS.length]);
     ngChars = state.players.slice(0,ngCount).map(p=>p.char||null);
+    ngGadgets = state.players.slice(0,ngCount).map(p=>p.gadget||null);
     if(state.mode){ ngMode = state.mode.type; ngModeVals[ngMode] = state.mode.value; } else if(state.gameStarted){ ngMode = 'none'; }
     document.getElementById('ngCapital').value = state.startCapital;
     document.getElementById('ngGambling').checked = !!state.gambling;
@@ -7239,8 +7472,8 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
   document.getElementById('ngStart').addEventListener('click', ()=>{
     if(CHAR_LIB.length && ngChars.some(c=>!c)){ showAlert('Bitte zuerst für jeden Spieler einen Charakter wählen (Bild neben dem Namen antippen).'); return; }
     const cap = parseInt(document.getElementById('ngCapital').value,10); const capital = (isNaN(cap)||cap<0) ? 50 : cap;
-    state.startCapital = capital; state.mode = ngMode==='none' ? null : {type:ngMode, value:ngModeVals[ngMode]}; state.gameEnded = false; state.endPromptKey = null;
-    state.players = ngNames.map((n,idx)=>({ id:cryptoId(), name:(n||'').trim()||`Spieler ${idx+1}`, hash:capital, inventory:[], joint:startJointItems(), jointOpen:false, skipNextTurn:false, jointsBuilt:0, color: ngColors[idx]||TEAM_COLORS[idx%TEAM_COLORS.length], char: ngChars[idx]||null, fieldNr:BOARD_START_FIELD, fieldHistory:[] }));
+    state.startCapital = capital; state.mode = ngMode==='none' ? null : {type:ngMode, value:ngModeVals[ngMode]}; state.gameEnded = false; state.winsCounted = false; state.endPromptKey = null;
+    state.players = ngNames.map((n,idx)=>({ id:cryptoId(), name:(n||'').trim()||`Spieler ${idx+1}`, hash:capital, inventory:[], joint:startJointItems(), jointOpen:false, skipNextTurn:false, jointsBuilt:0, gadget: ngGadgets[idx]||null, gs:{}, jointN:{}, color: ngColors[idx]||TEAM_COLORS[idx%TEAM_COLORS.length], char: ngChars[idx]||null, fieldNr:BOARD_START_FIELD, fieldHistory:[] }));
     state.round=1; state.turnIndex=0; state.turnDirection=1; state.turnsTakenThisRound=0; state.gameStarted=true;
     state.spotOffsets = rollSpotOffsets();
     state.gambling = !!document.getElementById('ngGambling').checked; state.gamblePending = {};
@@ -7251,7 +7484,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     newGameModal.classList.remove('open');
     renderAll(); scheduleSave();
     bcast('start', {
-      players: state.players.map(p=>({name:p.name, color:p.color})),
+      players: state.players.map(p=>({name:p.name, color:p.color, gadget:p.gadget||null})),
       rauchspot: (getCurrentRauchspot()||{}).name || null,
       police: (getCurrentPolice()||{}).name || null,
       weather: state.weather ? {type:state.weather.type, roundsLeft:state.weather.roundsLeft} : null
@@ -7658,6 +7891,8 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       .bm-turn .lbl{ font-size:26px; color:var(--text-faint); font-weight:700; text-transform:uppercase; letter-spacing:.1em; margin-bottom:6px; }
       .bm-turn .name{ font-size:92px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:22px; }
       .bm-dot{ width:38px; height:38px; border-radius:50%; display:inline-block; flex-shrink:0; }
+      .bm-av{ box-sizing:border-box; overflow:hidden; vertical-align:middle; margin-right:.25em; }
+      .bm-av svg{ display:block; width:100%; height:100%; }
       .bm-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:16px; }
       .bm-card{ background:var(--surface); box-shadow:var(--shadow); border-radius:22px; padding:18px 24px; display:flex; flex-direction:column; gap:8px; }
       .bm-card.is-turn{ outline:3px solid var(--accent-soft); box-shadow:var(--glow); }
@@ -9226,9 +9461,28 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         if(soundOn) audioCtx();
       });
     }
+    // Charakter einer Person finden: direkt am Objekt oder über den Namen im gespeicherten Spielstand
+    let bmCharSrc = null, bmCharMap = {}, bmAvCache = {};
+    function bmCharOf(p){
+      if(p && p.char && p.char.cfg) return p.char;
+      const st = loadGameState();
+      if(!st || !Array.isArray(st.players)) return null;
+      if(st !== bmCharSrc){ bmCharSrc = st; bmCharMap = {}; st.players.forEach(q=>{ if(q && q.char && q.char.cfg) bmCharMap[q.name] = q.char; }); }
+      return (p && bmCharMap[p.name]) || null;
+    }
+    // Rundes Charakterbild (Büste) mit Teamfarbe als Rand
+    function bmAvatarHTML(ch, color, size){
+      const key = (ch.id||'')+'|'+(ch.variantId||'');
+      let svg = bmAvCache[key];
+      if(!svg){ try{ svg = RBChar.render(ch.cfg,{viewBox:'38 30 124 124'}); }catch(e){ svg = ''; } bmAvCache[key] = svg; }
+      if(!svg) return '';
+      const px = Math.round((size||28)*2.2);
+      return `<span class="bm-dot bm-av" style="width:${px}px; height:${px}px; background:${escapeAttr(ch.bg||'#C9D6DC')}; border:3px solid ${escapeAttr(color||'#9CFF9C')};">${svg}</span>`;
+    }
     function nameTag(p, size){
       if(!p) return '';
-      const dot = p.color ? `<span class="bm-dot" style="width:${size||28}px; height:${size||28}px; background:${p.color};"></span>` : '';
+      const ch = bmCharOf(p);
+      const dot = ch ? bmAvatarHTML(ch, p.color, size) : (p.color ? `<span class="bm-dot" style="width:${size||28}px; height:${size||28}px; background:${p.color};"></span>` : '');
       return dot + escapeHtml(p.name);
     }
     // Zählt eine Zahl in einem Text (z.B. "+50 🍞×3", "-30", "3/4") sichtbar von 0 zum Endwert hoch.
@@ -9484,7 +9738,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
             const jointDots = jk.map(k=>`<span class="bm-jt-dot" style="background:${p.joint&&p.joint[k]?(p.color||'var(--accent)'):'var(--sep-strong)'};"></span>`).join('');
             return `<div class="bm-card ${cp&&p.id===cp.id?'is-turn':''}" style="--i:${idx};">
               <div class="rank">#${idx+1}</div>
-              <div class="nm">${nameTag(p,20)}</div>
+              <div class="nm">${nameTag(p,20)}${gadgetById(p.gadget) ? ` <span title="${escapeAttr(gadgetById(p.gadget).name)}">${gadgetById(p.gadget).icon}</span>` : ''}</div>
               <div class="hs">${p.hash}${bmFactor(state2,p)>1 ? ` <span class="bm-fx">×${+bmFactor(state2,p).toFixed(2)}</span>` : ''}</div>
               <div class="jt">${jointDots}</div>
             </div>`;
@@ -9514,7 +9768,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         <div class="bm-label">Los geht's</div>
         <div style="font-size:68px; font-weight:800;">🎉 Spiel gestartet!</div>
         ${chips.length ? `<div class="bm-top">${chips.join('')}</div>` : ''}
-        <div class="bm-pairs" style="max-width:900px;">${(data.players||[]).map((p,idx)=>`<div class="bm-pair bm-fade-up" style="animation-delay:${idx*0.09}s;">${nameTag(p,26)}</div>`).join('')}</div>
+        <div class="bm-pairs" style="max-width:900px;">${(data.players||[]).map((p,idx)=>`<div class="bm-pair bm-fade-up" style="animation-delay:${idx*0.09}s;">${nameTag(p,26)}${gadgetById(p.gadget) ? ' '+gadgetById(p.gadget).icon : ''}</div>`).join('')}</div>
       </div>`;
     }
     function renderMyTurn(data){
@@ -9534,6 +9788,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
             <div class="nm">${nameTag(data,36)}</div>
             <div class="hs" id="mtHash"></div>${data.hashFactor>1 ? `<div class="bm-fx bm-fx-big">Joint-Bonus ×${data.hashFactor}</div>` : ''}
           </div>
+          ${data.gadget ? `<div class="bm-chip" style="align-self:flex-start;">${data.gadget.icon} <b>${escapeHtml(data.gadget.name)}</b> <span style="font-size:18px; color:var(--text-faint);">${escapeHtml(data.gadget.text)}</span></div>` : ''}
           <div>
             <div class="stat-lbl" style="margin-bottom:8px;">Inventar</div>
             <div class="bm-tile-chips">${inv.length ? inv.map(i=>`<div class="bm-tile-chip">${escapeHtml(i)}</div>`).join('') : `<div class="bm-tile-chip" style="opacity:.5;">leer</div>`}</div>
