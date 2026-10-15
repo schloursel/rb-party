@@ -487,7 +487,11 @@
     {n:'Augenklappe', f:(g,c,c2)=>{ const x=100-g.eDX, y=g.eyeY, rx=lensR(g)*.95, ry=lensR(g)*.82;
         const strap=`<path d="M${r1(x-rx*.5)} ${r1(y-ry*.7)}L${r1(100-g.hwAt(g.eyeY-14)-1)} ${r1(g.eyeY-16)}M${r1(x+rx*.6)} ${r1(y-ry*.75)}L${r1(100+g.hw*.7)} ${r1(g.top+9)}" stroke="${c}" stroke-width="2" fill="none" stroke-linecap="round"/>`;
         const patch=`<ellipse cx="${r1(x)}" cy="${r1(y)}" rx="${r1(rx)}" ry="${r1(ry)}" fill="${c}" stroke="${INK}" stroke-width=".9"/>`;
-        return strap+patch; }}
+        return strap+patch; }},
+    {n:'Skibrille', f:(g,c,c2)=>{ const x1=100-g.eDX-lensR(g)*1.2, x2=100+g.eDX+lensR(g)*1.2, y=g.eyeY, h=lensR(g)*.95, r=h*.9;
+        const d=`M${r1(x1+r)} ${r1(y-h)}H${r1(x2-r)}Q${r1(x2)} ${r1(y-h)} ${r1(x2)} ${r1(y-h+r)}V${r1(y+h-r)}Q${r1(x2)} ${r1(y+h)} ${r1(x2-r)} ${r1(y+h)}H${r1(x1+r)}Q${r1(x1)} ${r1(y+h)} ${r1(x1)} ${r1(y+h-r)}V${r1(y-h+r)}Q${r1(x1)} ${r1(y-h)} ${r1(x1+r)} ${r1(y-h)}Z`;
+        const strap=`<path d="M${r1(x1)} ${r1(y)}L${r1(100-g.hwAt(y)-2)} ${r1(y-1)}M${r1(x2)} ${r1(y)}L${r1(100+g.hwAt(y)+2)} ${r1(y-1)}" stroke="${c}" stroke-width="4" stroke-linecap="round"/>`;
+        return strap+`<path d="${d}" fill="${c2}" fill-opacity=".82" stroke="${c}" stroke-width="3" stroke-linejoin="round"/><path d="M${r1(x1+r*.6)} ${r1(y-h*.55)}L${r1(x1+r*1.5)} ${r1(y-h*.55)}" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/>`; }}
   ];
 
   // ---------- Kopfbedeckung ----------
@@ -580,7 +584,14 @@
     {n:'Kochmütze', front:(g,c,c2)=>{ const y=g.browY-9, k=g.hwAt(y-8)+8, ty=g.top-14;
         const puff=(x,yy,r)=>fab(g,`M${r1(x-r)} ${r1(yy)}a${r1(r)} ${r1(r)} 0 1 0 ${r1(r*2)} 0a${r1(r)} ${r1(r)} 0 1 0 ${r1(-r*2)} 0Z`,c,'');
         const band=fab(g,`M${r1(100-k)} ${r1(y-9)}Q100 ${r1(y-5)} ${r1(100+k)} ${r1(y-9)}L${r1(100+k)} ${r1(y+1)}Q100 ${r1(y+5)} ${r1(100-k)} ${r1(y+1)}Z`,c,`<path d="M${r1(100-k)} ${r1(y-3)}Q100 ${r1(y+1)} ${r1(100+k)} ${r1(y-3)}" fill="none" stroke="${c2}" stroke-width="1.4" opacity=".8"/>`);
-        return puff(100-k*.62,ty+12,15)+puff(100+k*.62,ty+12,15)+puff(100,ty+2,18)+fab(g,`M${r1(100-k*.9)} ${r1(ty+12)}H${r1(100+k*.9)}V${r1(y-6)}H${r1(100-k*.9)}Z`,c,'')+band; }}
+        return puff(100-k*.62,ty+12,15)+puff(100+k*.62,ty+12,15)+puff(100,ty+2,18)+fab(g,`M${r1(100-k*.9)} ${r1(ty+12)}H${r1(100+k*.9)}V${r1(y-6)}H${r1(100-k*.9)}Z`,c,'')+band; }},
+    {n:'Skihelm', front:(g,c,c2)=>{ const y=g.browY-8, k=g.hwAt(y-6)+10;
+        const stripe=`<path d="M${r1(100-g.hw*.8)} ${r1(g.top+10)}Q100 ${r1(g.top-8)} ${r1(100+g.hw*.8)} ${r1(g.top+10)}" fill="none" stroke="${c2}" stroke-width="5"/>`;
+        const pads=[-1,1].map(s=>`<rect x="${r1(100+s*(g.hwAt(g.earY)+3)-5)}" y="${r1(g.earY-9)}" width="10" height="18" rx="5" fill="${c2}"/>`).join('');
+        return fab(g,capBase(g,10,y,6),c,hiBand(g,c)+stripe)+pads; }},
+    {n:'Rennhelm', front:(g,c,c2)=>{ const yb=g.browY-9;
+        const stripe=`<path d="M100 ${r1(g.top-12)}V${r1(yb-3)}" stroke="${c2}" stroke-width="5.4" stroke-linecap="round"/><path d="M${r1(100-g.hw*.72)} ${r1(g.top+16)}Q100 ${r1(g.top+2)} ${r1(100+g.hw*.72)} ${r1(g.top+16)}" fill="none" stroke="${shade(c,-.3)}" stroke-width="3"/>`;
+        return hoodFront(g,c)+stripe; }}
   ];
 
   // ---------- Kleidung ----------
@@ -626,7 +637,10 @@
     {n:'Fußballtrikot', f:(g,c,c2,sk)=>({inner:`<path d="${g.torsoD}" fill="${c}"/><path d="M${r1(100-g.nw-8)} 150L100 168L${r1(100+g.nw+8)} 150Z" fill="${sk}" ${SL()}/><path d="M${r1(100-g.nw-8)} 150L100 168L${r1(100+g.nw+8)} 150" fill="none" stroke="${c2}" stroke-width="3.2" stroke-linejoin="round"/><path d="M${r1(100-g.bw+4)} 226L${r1(100-g.sw*.8)} 176M${r1(100+g.bw-4)} 226L${r1(100+g.sw*.8)} 176" stroke="${c2}" stroke-width="3.4" stroke-linecap="round"/>`})},
     {n:'Feuerwehrjacke', f:(g,c,c2,sk)=>({inner:`<path d="${g.torsoD}" fill="${c}"/><path d="M${r1(100-g.nw-8)} 151Q100 ${r1(170+g.nw*.1)} ${r1(100+g.nw+8)} 151Z" fill="${sk}" ${SL()}/><path d="M${r1(100-g.nw-8)} 151Q100 ${r1(170+g.nw*.1)} ${r1(100+g.nw+8)} 151" fill="none" stroke="${shade(c,-.25)}" stroke-width="5"/><rect x="0" y="198" width="200" height="4.6" fill="${c2}"/><rect x="0" y="210" width="200" height="4.6" fill="${c2}"/><path d="M100 172V236" stroke="${shade(c,-.3)}" stroke-width="1.4" stroke-dasharray="2 2"/>`})},
     {n:'Kochjacke', f:(g,c,c2,sk)=>{ let b=''; [174,188,202,216].forEach(y=>{ b+=`<circle cx="${r1(100-8)}" cy="${y}" r="1.7" fill="${shade(c,-.3)}"/><circle cx="${r1(100+8)}" cy="${y}" r="1.7" fill="${shade(c,-.3)}"/>`; });
-      return {inner:`<path d="${g.torsoD}" fill="${c}"/><path d="M${r1(100-g.nw-6)} 150Q100 ${r1(166+g.nw*.1)} ${r1(100+g.nw+6)} 150Z" fill="${sk}" ${SL()}/><path d="M${r1(100-g.nw-4)} 150L100 ${r1(176)}L${r1(100+g.nw+4)} 150Q100 ${r1(160)} ${r1(100-g.nw-4)} 150Z" fill="${c2}" ${SL()}/><path d="M${r1(100-12)} 172L${r1(100-12)} 236M${r1(100+12)} 172L${r1(100+12)} 236" stroke="${shade(c,-.2)}" stroke-width="1.4" fill="none"/>${b}`}; }}
+      return {inner:`<path d="${g.torsoD}" fill="${c}"/><path d="M${r1(100-g.nw-6)} 150Q100 ${r1(166+g.nw*.1)} ${r1(100+g.nw+6)} 150Z" fill="${sk}" ${SL()}/><path d="M${r1(100-g.nw-4)} 150L100 ${r1(176)}L${r1(100+g.nw+4)} 150Q100 ${r1(160)} ${r1(100-g.nw-4)} 150Z" fill="${c2}" ${SL()}/><path d="M${r1(100-12)} 172L${r1(100-12)} 236M${r1(100+12)} 172L${r1(100+12)} 236" stroke="${shade(c,-.2)}" stroke-width="1.4" fill="none"/>${b}`}; }},
+    {n:'Skijacke', f:(g,c,c2,sk)=>({inner:`<path d="${g.torsoD}" fill="${c}"/><path d="M${r1(100-g.nw-8)} 151Q100 ${r1(168+g.nw*.1)} ${r1(100+g.nw+8)} 151Z" fill="${sk}" ${SL()}/><rect x="0" y="188" width="200" height="9" fill="${c2}"/><path d="M${r1(100-g.bw)} 208Q100 214 ${r1(100+g.bw)} 208M${r1(100-g.bw)} 222Q100 228 ${r1(100+g.bw)} 222" fill="none" ${SL(1.3)}/><path d="M100 172V236" ${SL(1.2)} stroke-dasharray="2 2"/>`,
+      outer:`<path d="M${r1(100-g.nw-9)} 150Q${r1(100-g.nw-12)} 164 ${r1(100-g.nw)} 170Q100 176 ${r1(100+g.nw)} 170Q${r1(100+g.nw+12)} 164 ${r1(100+g.nw+9)} 150Q100 ${r1(160+g.nw*.1)} ${r1(100-g.nw-9)} 150Z" fill="${shade(c,-.12)}" ${SL()}/>`})},
+    {n:'Rennanzug', f:(g,c,c2,sk)=>({inner:`<path d="${g.torsoD}" fill="${c}"/><path d="M${r1(100-g.nw-8)} 150Q100 ${r1(166+g.nw*.1)} ${r1(100+g.nw+8)} 150Z" fill="${sk}" ${SL()}/><path d="M${r1(100-g.nw-8)} 150Q100 ${r1(166+g.nw*.1)} ${r1(100+g.nw+8)} 150" fill="none" stroke="${c2}" stroke-width="4"/><path d="M${r1(100-g.bw+3)} 230L${r1(100-g.sw*.78)} 174M${r1(100+g.bw-3)} 230L${r1(100+g.sw*.78)} 174" stroke="${c2}" stroke-width="4" stroke-linecap="round"/><rect x="${r1(100-g.sw*.4)}" y="182" width="${r1(g.sw*.26)}" height="10" rx="2" fill="${c2}"/><rect x="${r1(100+g.sw*.14)}" y="182" width="${r1(g.sw*.26)}" height="10" rx="2" fill="${shade(c,-.25)}"/><rect x="${r1(100-g.sw*.4)}" y="198" width="${r1(g.sw*.8)}" height="4" fill="${c2}" opacity=".9"/><path d="M100 168V236" stroke="${shade(c,-.3)}" stroke-width="1.4" stroke-dasharray="2 2"/>`})}
   ];
 
   // ---------- Aufdruck auf der Kleidung (c = Schriftfarbe, c2 = Rand) ----------
@@ -810,6 +824,6 @@
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" class="${opts.cls||'rbchar'}" role="img" aria-label="Charakter"><defs>${g.defs}</defs>${s}</svg>`;
   }
 
-  root.RBChar = {VERSION:'2.3.126', render, defaultConfig, randomConfig, normalize, CATEGORIES, PARTS, shade,
+  root.RBChar = {VERSION:'2.3.128', render, defaultConfig, randomConfig, normalize, CATEGORIES, PARTS, shade,
     styleName:(k,i)=>PARTS[k][i].n};
 })(typeof window!=='undefined' ? window : this);

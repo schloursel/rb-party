@@ -1237,7 +1237,7 @@
 
 <script src="rb-sounds.js"></script>
 <script src="rb-flags.js"></script>
-<script src="charakter-teile.js?v=2.3.126"></script>
+<script src="charakter-teile.js?v=2.3.128"></script>
 <script src="charaktere.js"></script>
 <script>
 window.addEventListener('error', function(e){
@@ -1458,7 +1458,7 @@ window.addEventListener('unhandledrejection', function(e){
   // ---------- Gadgets: pro Spiel von höchstens einer Person gewählt, kleine Vorteile ----------
   const GADGETS = [
     {id:'sturmmaske',  name:'Sturmmaske',   icon:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.15em" aria-hidden="true"><path d="M12 2.2c-4 0-6.6 3-6.6 7.3 0 2.3.5 3.8 1.2 5.2L5.6 20c-.2.8.3 1.8 1.3 1.8h10.2c1 0 1.5-1 1.3-1.8l-1-5.3c.7-1.4 1.2-2.9 1.2-5.2 0-4.3-2.6-7.3-6.6-7.3z" fill="#2B2D31"/><rect x="7.4" y="8.2" width="9.2" height="3.6" rx="1.8" fill="#F3C9A0"/><circle cx="10" cy="10" r=".9" fill="#2B2D31"/><circle cx="14" cy="10" r=".9" fill="#2B2D31"/></svg>', text:'Shops kosten nur die Hälfte.'},
-    {id:'fahrrad',     name:'Fahrrad',      icon:'🚲', text:'Bergab +2, bergauf −1 aufs Würfeln.'},
+    {id:'sonnenbrille', name:'Sonnenbrille', icon:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.15em" aria-hidden="true"><path d="M2.5 9.5h19" stroke="#1D1D1F" stroke-width="1.8" stroke-linecap="round"/><path d="M3.2 9.8h7.6c.2 3.8-1.6 6-3.9 6-2.4 0-4.2-2.2-3.7-6z" fill="#2B2D31" stroke="#1D1D1F" stroke-width="1.2" stroke-linejoin="round"/><path d="M13.2 9.8h7.6c.5 3.8-1.3 6-3.7 6-2.3 0-4.1-2.2-3.9-6z" fill="#2B2D31" stroke="#1D1D1F" stroke-width="1.2" stroke-linejoin="round"/><path d="M10.8 10.6q1.2-1 2.4 0" fill="none" stroke="#1D1D1F" stroke-width="1.4" stroke-linecap="round"/><path d="M5 11l1.8-.2M15 11l1.8-.2" stroke="#8FB8E0" stroke-width="1.2" stroke-linecap="round"/></svg>', text:'Sonnenschein-Bonus gilt doppelt (+2 aufs Würfeln).'},
     {id:'spassgetraenk', name:'Spaßgetränk', icon:'🍺', text:'Eine Polizeikontrolle pro Spiel wird ignoriert.'},
     {id:'vape',        name:'Vape',         icon:'💨', text:'Joint-Bau zum halben Preis, am Rauchspot umsonst.'},
     {id:'powerbank',   name:'Powerbank',    icon:'🔋', text:'Jede 3. Runde ein zusätzlicher Zug.'},
@@ -3953,7 +3953,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     msToastUsers = new Set(); msTatarUsers = {};
     dorfToastUsers = new Set(); dorfTatarUsers = {};
     gummiTargets = new Set();
-    kinderJoyModifier = null; fahrradSlope = 0;
+    kinderJoyModifier = null;
     woerstActive = false;
     boardMoveState = null; lastRollValue = null;
   }
@@ -4199,7 +4199,6 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
   let dorfToastUsers = new Set(), dorfTatarUsers = {};
   let gummiTargets = new Set();
   let kinderJoyModifier = null;
-  let fahrradSlope = 0;   // Fahrrad-Gadget: +1 bergab, -1 bergauf, 0 flach (gilt für den aktuellen Wurf)
   let woerstActive = false; // Wörscht vom Metzger: nächster Wurf 2×, besserer zählt
   let duelOrder = [], duelExcluded = {}, duelGame = null, duelWinners = {};
   let herPick = {c:null, t:null}, dorfPick = {c:null, t:null};
@@ -4313,10 +4312,9 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       });
     }
     let mod = 0; const boosts = []; let lastRollContainer = null;
-    if(state.sonnenscheinPending){ mod += 1; boosts.push('☀️ Sonnenschein: nächster Wurf +1'); }
+    if(state.sonnenscheinPending){ const sun = hasGadget(cp,'sonnenbrille') ? 2 : 1; mod += sun; boosts.push('☀️ Sonnenschein: nächster Wurf +'+sun+(sun>1 ? ' (Sonnenbrille)' : '')); }
     if(state.weather && state.weather.type==='schnee'){ mod -= 1; boosts.push('❄️ Schnee: Wurf -1 (noch '+state.weather.roundsLeft+' Runde'+(state.weather.roundsLeft===1?'':'n')+')'); }
     if(kinderJoyModifier!==null){ mod += kinderJoyModifier; boosts.push('🎰 Kinder Joy: '+(kinderJoyModifier>=0?'+':'')+kinderJoyModifier); }
-    if(hasGadget(cp,'fahrrad') && fahrradSlope!==0){ mod += (fahrradSlope>0 ? 2 : -1); boosts.push('🚲 Fahrrad: '+(fahrradSlope>0 ? 'bergab +2' : 'bergauf −1')); }
     if(woerstActive){ boosts.push('🌭 Wörscht vom Metzger: nächster Wurf 2×, besserer Wurf zählt'); }
     const hasKinderJoy = cp.inventory.includes('Kinder Joy');
     const showKinderJoyBtn = hasKinderJoy && kinderJoyModifier===null && lastRollValue==null;
@@ -4328,7 +4326,6 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       ${flowSteps(1)}
       <div class="flow-player">🎯 ${teamDot(cp)}${escapeHtml(cp.name)} ist dran</div>
       <div class="flow-question">Erst würfeln, um zu sehen wie weit du kommst.</div>
-      ${(hasGadget(cp,'fahrrad') && lastRollValue==null) ? `<div class="flow-items" id="fahrradRow"><span class="desc" style="margin:0 8px 0 0;">🚲 Fahrrad:</span>${[[1,'Bergab +2'],[0,'Flach'],[-1,'Bergauf −1']].map(o=>`<button type="button" class="pill-btn ${fahrradSlope===o[0]?'':'ghost'}" data-slope="${o[0]}">${o[1]}</button>`).join('')}</div>` : ''}
       ${(showKinderJoyBtn||showWoerstBtn) ? `<div class="flow-items">
         ${showKinderJoyBtn ? `<button class="pill-btn ghost" id="kinderJoyBtn">🎰 Kinder Joy einsetzen (±6, Slotmaschine)</button>` : ''}
         ${showWoerstBtn ? `<button class="pill-btn ghost" id="woerstBtn">🌭 Wörscht vom Metzger einsetzen (2× würfeln, besseren nehmen)</button>` : ''}
@@ -4353,7 +4350,6 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       </details>
       <div class="flow-next-wrap"><button class="pill-btn" id="toFieldChoiceBtn">Weiter zur Feldwahl →</button></div>
     `;
-    panel.querySelectorAll('#fahrradRow [data-slope]').forEach(b=>b.addEventListener('click', ()=>{ fahrradSlope = parseInt(b.dataset.slope,10)||0; renderWuerfelPanel(panel); }));
     if(showKinderJoyBtn){
       document.getElementById('kinderJoyBtn').addEventListener('click', ()=>{
         const btn = document.getElementById('kinderJoyBtn'); btn.disabled=true; btn.style.opacity='0.5';
