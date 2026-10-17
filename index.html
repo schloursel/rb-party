@@ -326,6 +326,19 @@
   .winner-pick{ display:flex; gap:10px; margin-bottom:14px; }
   .winner-pick button{ flex:1; padding:11px; border-radius:var(--radius-md); border:1.5px solid var(--sep-strong); background:var(--surface-alt); font-size:13.5px; font-weight:700; color:var(--text-soft); cursor:pointer; }
   .winner-pick button.active{ border-color:var(--good); color:var(--good); background:rgba(76,107,87,0.12); }
+  /* Herausforderungs-Einsatz: pro Person eine Karte (Hash + Items) */
+  .stake-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin:8px 0 4px; }
+  .stake-card{ background:var(--surface-alt); border-radius:var(--radius-md); padding:12px; display:flex; flex-direction:column; gap:8px; }
+  .stake-head{ display:flex; align-items:center; gap:6px; font-size:14px; }
+  .stake-have{ margin-left:auto; font-size:11.5px; color:var(--text-faint); }
+  .stake-hash{ display:flex; align-items:stretch; gap:6px; }
+  .stake-hash input{ flex:1; min-width:0; text-align:center; font-size:20px; font-weight:800; padding:8px; border-radius:var(--radius-md); border:1.5px solid var(--sep-strong); background:var(--surface); color:var(--text); }
+  .stake-step{ width:44px; border-radius:var(--radius-md); border:1.5px solid var(--sep-strong); background:var(--surface); font-size:20px; font-weight:800; color:var(--text-soft); cursor:pointer; }
+  .stake-quick{ display:flex; flex-wrap:wrap; gap:6px; }
+  .stake-q{ padding:6px 12px; border-radius:99px; border:1.5px solid var(--sep-strong); background:var(--surface); font-size:12.5px; font-weight:700; color:var(--text-soft); cursor:pointer; }
+  .stake-q.on{ border-color:var(--good); color:var(--good); background:rgba(76,107,87,0.12); }
+  .stake-none{ margin:0; opacity:.7; }
+  .stake-note{ margin-top:2px; }
   .pair-card{ background:var(--surface-alt); border-radius:var(--radius-md); padding:14px; margin-bottom:10px; }
   .pair-title{ font-size:12.5px; font-weight:700; color:var(--text-faint); margin-bottom:8px; }
 
@@ -3939,8 +3952,8 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     currentCardText = null; cardTargetId = null;
     lastMinigame = null; msRangOrder = []; msRangExcluded = {};
     duelOrder = []; duelExcluded = {}; duelGame = null; duelWinners = {};
-    herWinner = null; herTarget = null; herStake = 50; herGame = null; herPick = {c:null, t:null};
-    dorfHerTarget = null; dorfHerWinner = null; dorfHerStake = 50; dorfHerGame = null; dorfPick = {c:null, t:null};
+    herWinner = null; herTarget = null; herStakes = {}; herGame = null;
+    dorfHerTarget = null; dorfHerWinner = null; dorfStakes = {}; dorfHerGame = null;
     dorfMinigame = null; dorfRangOrder = []; dorfRangExcluded = {};
     taxiOrt = null;
     wheelRotation = 0;
@@ -4201,9 +4214,8 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
   let kinderJoyModifier = null;
   let woerstActive = false; // Wörscht vom Metzger: nächster Wurf 2×, besserer zählt
   let duelOrder = [], duelExcluded = {}, duelGame = null, duelWinners = {};
-  let herPick = {c:null, t:null}, dorfPick = {c:null, t:null};
-  let herWinner = null, herTarget = null, herStake = 50, herGame = null;
-  let dorfHerTarget = null, dorfHerWinner = null, dorfHerStake = 50, dorfHerGame = null;
+  let herWinner = null, herTarget = null, herGame = null;
+  let dorfHerTarget = null, dorfHerWinner = null, dorfHerGame = null;
   let dorfMinigame = null, dorfRangOrder = [], dorfRangExcluded = {};
   let dorfplatzDoneThisTurn = false;
   let taxiOrt = null;
@@ -6292,65 +6304,70 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     });
   }
 
-  // Joint-Teile als zusätzlicher Einsatz bei Herausforderungen
-  let herJoint = [], dorfHerJoint = [];
+  // ---------- Herausforderungs-Einsatz: jede Person legt selbst fest, was sie aufs Spiel setzt ----------
+  // Pro Person: Hash (Zahl, Stufen, Schnellwahl) und beliebig viele eigene Items bzw. Joint-Teile. Wer gewinnt, bekommt alles, was die andere Person gesetzt hat.
+  let herStakes = {}, dorfStakes = {};   // Personen-ID → {hash, items:['i:Name' | 'j:key']}
   function jointLabel(k){ return (JOINT_KEYS.find(j=>j.k===k)||{}).label || k; }
-  function jointStakeHtml(a, b, sel, cls){
-    return `<p class="desc" style="margin-top:6px;">Joint-Teile als Einsatz (Gewinner:in bekommt sie, Verlierer:in verliert sie):</p><div class="joint-grid ${cls}">${JOINT_KEYS.map(j=>{
-      const ha = !!a.joint[j.k], hb = !!b.joint[j.k], dis = !ha && !hb;
-      const who = dis ? 'hat niemand' : (ha && hb ? 'beide haben es' : escapeHtml(ha ? a.name : b.name));
-      return `<button class="joint-chip ${sel.includes(j.k)?'on':''}" data-jk="${j.k}" ${dis?'disabled style="opacity:.4;"':''}>${jointIconSVG(j.k,16)} ${j.label}<small style="display:block; font-size:10px; opacity:.75;">${who}</small></button>`;
-    }).join('')}</div>`;
-  }
-  function applyJointStake(winner, loser, keys){
-    const moved = [];
-    keys.forEach(k=>{
-      if(!loser.joint[k]) return;
-      takeJointItem(loser,k); giveJointItem(winner,k);
-      moved.push(jointLabel(k));
-      logEvent(winner, '+'+jointLabel(k)+' (Joint-Teil, Herausforderung gegen '+loser.name+')');
-      logEvent(loser, '-'+jointLabel(k)+' (Joint-Teil, Herausforderung gegen '+winner.name+')');
-    });
-    return moved;
-  }
-  // Item-Einsatz (gegenseitig, optional): Pick-Kennung 'i:Name' (Inventar) oder 'j:key' (Joint-Teil).
-  // pick.c = Item des Ziels, das die Herausforderer:in gewinnt; pick.t = Item der Herausforderer:in, das das Ziel gewinnt.
   function itemPool(p){
     const inv = p.inventory.filter((n,i,a)=>a.indexOf(n)===i).map(n=>({id:'i:'+n, label:n}));
     return inv.concat(JOINT_KEYS.filter(j=>p.joint[j.k]).map(j=>({id:'j:'+j.k, label:j.label, jk:j.k})));
   }
   function itemPickLabel(id){ return !id ? '' : (id.slice(0,2)==='j:' ? jointLabel(id.slice(2)) : id.slice(2)); }
   function itemPickValid(p, id){ return !!id && itemPool(p).some(x=>x.id===id); }
-  function itemStakeActive(cp, tg, pick){ return !!cp && !!tg && itemPickValid(tg, pick.c) && itemPickValid(cp, pick.t); }
-  function itemStakeList(cp, tg, pick){ return itemStakeActive(cp, tg, pick) ? ['Item: '+itemPickLabel(pick.c)+' ⇄ '+itemPickLabel(pick.t)] : []; }
-  function itemStakeHtml(cp, tg, pick, cls){
-    const pc = itemPool(cp), pt = itemPool(tg);
-    const head = `<p class="desc" style="margin-top:6px;">Item-Einsatz (optional, gegenseitig): Wer gewinnt, bekommt das Item der anderen Person. Bei 0 Hash ist das der einzige Gewinn.</p>`;
-    if(!pc.length || !pt.length){
-      const who = (!pc.length && !pt.length) ? 'Beide haben' : (escapeHtml((!pc.length ? cp : tg).name) + ' hat');
-      return head + `<p class="desc" style="opacity:.75;">Kein Item-Einsatz möglich: ${who} kein Item. Um Items zu spielen, muss man selbst eins haben.</p>`;
+  // Einsatz einer Person holen (Standard: 50 Hash, höchstens so viel wie sie hat); ungültige Werte und verschwundene Items werden bereinigt
+  function stakeOf(map, p){
+    let s = map[p.id]; if(!s) s = map[p.id] = {hash:Math.min(50, p.hash), items:[]};
+    s.hash = Math.max(0, Math.min(Number(s.hash)||0, p.hash));
+    s.items = s.items.filter(id=>itemPickValid(p,id));
+    return s;
+  }
+  // Für den Beamer: Reihenfolge Herausforderer:in, Herausgeforderte:r
+  function stakeSummary(a, b, map){
+    return [a,b].map(p=>{ const s = stakeOf(map,p); return {name:p.name, color:p.color, hash:s.hash, items:s.items.map(itemPickLabel)}; });
+  }
+  const STAKE_QUICK = [0,10,25,50,100];
+  function mountStakePicker(host, a, b, map, onChange){
+    // Joint-Teil, das die andere Person nicht annehmen kann (hat sie schon), ist als Einsatz sinnlos und wird ausgegraut
+    const recvOk = (o,id)=> id.slice(0,2)!=='j:' || !o.joint[id.slice(2)] || (hasGadget(o,'bauchtasche') && ((o.jointN&&o.jointN[id.slice(2)])||1) < BAUCH_MAX);
+    const card = (p,o)=>{
+      const s = stakeOf(map,p), pool = itemPool(p);
+      const quick = STAKE_QUICK.filter(v=>v<=p.hash).map(v=>({v, label:String(v)}));
+      if(p.hash>0 && !STAKE_QUICK.includes(p.hash)) quick.push({v:p.hash, label:'Alles ('+p.hash+')'});
+      return `<div class="stake-card" data-pid="${p.id}">
+        <div class="stake-head">${teamDot(p)}<b>${escapeHtml(p.name)}</b><span class="stake-have">hat ${p.hash} Hash</span></div>
+        <div class="stake-hash"><button class="stake-step" data-d="-10" aria-label="10 weniger">−</button><input type="number" inputmode="numeric" min="0" max="${p.hash}" value="${s.hash}" aria-label="Hash-Einsatz ${escapeHtml(p.name)}"><button class="stake-step" data-d="10" aria-label="10 mehr">+</button></div>
+        <div class="stake-quick">${quick.map(q=>`<button class="stake-q ${s.hash===q.v?'on':''}" data-h="${q.v}">${q.label}</button>`).join('')}</div>
+        ${pool.length ? `<div class="stake-items joint-grid">${pool.map(x=>{ const ok = recvOk(o,x.id); return `<button class="joint-chip item-chip ${s.items.includes(x.id)?'on':''}" data-id="${escapeHtml(x.id)}" ${ok?'':'disabled style="opacity:.4;" title="'+escapeHtml(o.name)+' hat das schon"'}>${x.jk ? jointIconSVG(x.jk,16)+' ' : ''}${escapeHtml(x.label)}</button>`; }).join('')}</div>` : `<p class="desc stake-none">Keine Items</p>`}
+      </div>`;
+    };
+    host.innerHTML = `<div class="stake-grid">${card(a,b)}${card(b,a)}</div><p class="desc stake-note">Jede Person setzt, was sie verlieren kann. Wer gewinnt, bekommt, was die andere Person gesetzt hat.</p>`;
+    host.querySelectorAll('.stake-card').forEach(c=>{
+      const p = c.dataset.pid===a.id ? a : b, s = stakeOf(map,p);
+      const redo = ()=>{ mountStakePicker(host, a, b, map, onChange); onChange(); };
+      c.querySelectorAll('.stake-step').forEach(bt=>bt.addEventListener('click', ()=>{ s.hash = Math.max(0, Math.min(p.hash, s.hash+(parseInt(bt.dataset.d,10)||0))); redo(); }));
+      c.querySelectorAll('.stake-q').forEach(bt=>bt.addEventListener('click', ()=>{ s.hash = parseInt(bt.dataset.h,10)||0; redo(); }));
+      c.querySelectorAll('.item-chip').forEach(bt=>bt.addEventListener('click', ()=>{ const id = bt.dataset.id; s.items = s.items.includes(id) ? s.items.filter(x=>x!==id) : s.items.concat(id); redo(); }));
+      const inp = c.querySelector('input');
+      inp.addEventListener('input', ()=>{ s.hash = Math.max(0, Math.min(p.hash, parseInt(inp.value,10)||0)); });
+      inp.addEventListener('change', redo);
+    });
+  }
+  // Überträgt den Einsatz der Verlierer:in an die Gewinner:in (Hash höchstens so viel, wie sie noch hat; Items nur, wenn die Gewinner:in sie annehmen kann)
+  function applyStakes(winner, loser, map){
+    const s = stakeOf(map, loser), amount = Math.min(s.hash, loser.hash), moved = [];
+    if(amount>0){
+      winner.hash += amount; loser.hash -= amount;
+      logEvent(winner, '+'+amount+' Hash (Herausforderung gegen '+loser.name+')'); logEvent(loser, '-'+amount+' Hash (Herausforderung gegen '+winner.name+')');
     }
-    const row = (chooser, owner, pool, sel, side)=> `<p class="desc" style="margin:6px 0 2px;">${teamDot(chooser)}<b>${escapeHtml(chooser.name)}</b> wählt ein Item von ${teamDot(owner)}<b>${escapeHtml(owner.name)}</b>:</p><div class="joint-grid ${cls}">${pool.map(x=>`<button class="joint-chip item-chip ${sel===x.id?'on':''}" data-side="${side}" data-id="${escapeHtml(x.id)}">${x.jk ? jointIconSVG(x.jk,16)+' ' : ''}${escapeHtml(x.label)}</button>`).join('')}</div>`;
-    return head + row(cp, tg, pt, pick.c, 'c') + row(tg, cp, pc, pick.t, 't');
-  }
-  function bindItemChips(cls, pick, rerender){
-    document.querySelectorAll('.'+cls+' .item-chip').forEach(b=>{ b.addEventListener('click', ()=>{
-      const side = b.dataset.side, id = b.dataset.id;
-      pick[side] = pick[side]===id ? null : id;
-      rerender();
-    }); });
-  }
-  // Überträgt das gewählte Item vom Verlierer zum Gewinner (nur wenn beide Seiten gewählt haben und die Items noch da sind)
-  function applyItemStake(winner, loser, cp, tg, pick){
-    if(!itemStakeActive(cp, tg, pick)) return null;
-    const id = winner.id===cp.id ? pick.c : pick.t;
-    if(!itemPickValid(loser, id)) return null;
-    const name = itemPickLabel(id);
-    if(id.slice(0,2)==='j:'){ const k = id.slice(2); takeJointItem(loser,k); giveJointItem(winner,k); }
-    else { const i = loser.inventory.indexOf(name); if(i<0) return null; loser.inventory.splice(i,1); winner.inventory.push(name); }
-    logEvent(winner, '+'+name+' (Item-Einsatz, Herausforderung gegen '+loser.name+')');
-    logEvent(loser, '-'+name+' (Item-Einsatz, Herausforderung gegen '+winner.name+')');
-    return name;
+    s.items.forEach(id=>{
+      if(!itemPickValid(loser,id)) return;
+      const name = itemPickLabel(id);
+      if(id.slice(0,2)==='j:'){ const k = id.slice(2); if(!giveJointItem(winner,k)) return; takeJointItem(loser,k); }
+      else { const i = loser.inventory.indexOf(name); if(i<0) return; loser.inventory.splice(i,1); winner.inventory.push(name); }
+      moved.push(name);
+      logEvent(winner, '+'+name+' (Einsatz, Herausforderung gegen '+loser.name+')'); logEvent(loser, '-'+name+' (Einsatz, Herausforderung gegen '+winner.name+')');
+    });
+    return {amount, moved};
   }
   function renderHerausforderung(panel, opts){
     const cp = currentPlayer();
@@ -6365,10 +6382,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         ${others.map(p=>`<option value="${p.id}" ${p.id===herTarget?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}
       </select></div>
       ${target ? `
-      <div class="num-input-row"><label>Einsatz</label><input type="number" id="herStakeInput" min="0" value="${herStake}"></div>
-      <p class="desc" style="margin-top:-6px;">Die herausgeforderte Person (<b>${escapeHtml(target.name)}</b>) legt den Einsatz fest. Gewinner:in bekommt <b>+<span id="herStakeShowW">${herStake}</span></b>, Verlierer:in <b>-<span id="herStakeShowL">${herStake}</span></b>.</p>
-      ${jointStakeHtml(cp, target, herJoint, 'her-joint')}
-      ${itemStakeHtml(cp, target, herPick, 'her-item')}
+      <div id="herStakeHost"></div>
       <div style="margin:12px 0;">
         ${herGame
           ? `<p class="desc">Gespielt wird: <b>${escapeHtml(herGame.name)}</b>${herGame.desc?` <span style="color:var(--text-faint);">– ${escapeHtml(herGame.desc)}</span>`:''} <button class="pill-btn subtle" id="herGameReroll" style="margin-left:6px; padding:5px 12px; font-size:11.5px;">🎲 anderes Spiel</button>${pgPlayBtn(herGame,'her-pg-play')}</p>`
@@ -6380,22 +6394,17 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       ` : `<p class="desc" style="margin-top:10px;">Erst eine Person auswählen.</p>`}
     `;
     document.getElementById('herTargetSel').addEventListener('change', e=>{
-      herTarget = e.target.value || null; herWinner = null; herGame = null; herStake = 50; herJoint = []; herPick = {c:null, t:null};
+      herTarget = e.target.value || null; herWinner = null; herGame = null; herStakes = {};
       renderHerausforderung(panel, opts);
       const t = herTarget ? playerById(herTarget) : null;
       if(t){ bcast('challenge_setup', {challenger:{name:cp.name,color:cp.color}, target:{name:t.name,color:t.color}}); }
     });
     if(!target) return;
-    document.getElementById('herStakeInput').addEventListener('input', e=>{
-      herStake = Math.max(0, parseInt(e.target.value,10)||0);
-      const w = document.getElementById('herStakeShowW'); if(w) w.textContent = herStake;
-      const l = document.getElementById('herStakeShowL'); if(l) l.textContent = herStake;
-    });
-    document.querySelectorAll('.her-joint .joint-chip').forEach(b=>{ b.addEventListener('click', ()=>{ const k = b.dataset.jk; herJoint = herJoint.includes(k) ? herJoint.filter(x=>x!==k) : herJoint.concat(k); renderHerausforderung(panel, opts); if(herGame) bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: herGame.name, finalDesc: herGame.desc||'', stake:herStake, jointStake:herJoint.map(jointLabel).concat(itemStakeList(cp,target,herPick)), challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}}); }); });
-    bindItemChips('her-item', herPick, ()=>{ renderHerausforderung(panel, opts); if(herGame) bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: herGame.name, finalDesc: herGame.desc||'', stake:herStake, jointStake:herJoint.map(jointLabel).concat(itemStakeList(cp,target,herPick)), challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}}); });
+    const herReveal = ()=>{ if(herGame) bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: herGame.name, finalDesc: herGame.desc||'', stakes:stakeSummary(cp,target,herStakes), challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}}); };
+    mountStakePicker(document.getElementById('herStakeHost'), cp, target, herStakes, herReveal);
     const drawGame = ()=>{
       herGame = drawMinigame(2);
-      bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: herGame.name, finalDesc: herGame.desc||'', stake:herStake, jointStake:herJoint.map(jointLabel).concat(itemStakeList(cp,target,herPick)), challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}});
+      herReveal();
       renderHerausforderung(panel, opts);
     };
     const drawBtn = document.getElementById('herGameDraw'); if(drawBtn) drawBtn.addEventListener('click', drawGame);
@@ -6408,15 +6417,12 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     pickWrap.querySelectorAll('button').forEach(btn=>{ btn.addEventListener('click', ()=>{ herWinner=btn.dataset.w; renderHerausforderung(panel, opts); }); });
     document.getElementById('herApplyBtn').addEventListener('click', ()=>{
       const winner = playerById(herWinner); if(!winner) return; const loser = winner.id===cp.id?target:cp;
-      let stake = herStake;
-      pushUndo(); stake = Math.min(stake, loser.hash); winner.hash += stake; loser.hash -= stake; logEvent(winner, '+'+stake+' Hash (Herausforderung gegen '+loser.name+')'); logEvent(loser, '-'+stake+' Hash (Herausforderung gegen '+winner.name+')');
-      const movedJ = applyJointStake(winner, loser, herJoint);
-      const movedI = applyItemStake(winner, loser, cp, target, herPick); if(movedI) movedJ.push('Item '+movedI);
+      pushUndo(); const res = applyStakes(winner, loser, herStakes); const stake = res.amount, movedJ = res.moved;
       renderPlayersGrid(); renderPlayerStrip(); scheduleSave();
       document.getElementById('herApplyResult').innerHTML = `<p class="swap-note">✓ Angewendet.${movedJ.length?' Übertragen: '+movedJ.join(', '):''}</p>`;
       { const wl = {name:winner.name,color:winner.color,text:'+'+stake+' 🏆'}, ll = {name:loser.name,color:loser.color,text:'-'+stake};
         bcast('result', {duel:true, pairs:[{winner:wl, loser:ll}], title:'Herausforderung – Ergebnis', icon:'🗡️', lines:[wl,ll], stake:stake, jointStake:movedJ, challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}}); }
-      herJoint=[]; herTarget=null; herWinner=null; herGame=null; herStake=50; herPick={c:null, t:null};
+      herTarget=null; herWinner=null; herGame=null; herStakes={};
     });
   }
 
@@ -6463,7 +6469,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         cp.hash = Math.max(0, cp.hash - cost);
         linkedShop.unlocked = true;
         renderPlayersGrid(); renderPlayerStrip(); scheduleSave();
-        bcast('waldfest', {player:{name:cp.name,color:cp.color}, cost, fredi:frediStateFor(cp), hash:cp.hash});
+        bcast('waldfest', {player:{name:cp.name,color:cp.color}, cost, fredi:frediStateFor(cp), hash:cp.hash, price:priceFor(cp,FREDI_PRICE,'fredi')});
       } else {
         cost = ortChargedAmounts[visitKey] !== undefined ? ortChargedAmounts[visitKey] : cost;
       }
@@ -6499,7 +6505,16 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       cp.skipNextTurn = true;
       cp.jointsBuilt = (cp.jointsBuilt||0)+1;
       renderPlayersGrid(); renderPlayerStrip(); scheduleSave();
-      renderOrtResolution(panel, ort);
+      // Beamer-Zeremonie (ca. 7 s); echter Betrag, Faktor/Ziel/Rangliste für die Anzeige
+      const jm = state.mode && state.mode.type==='joints' ? state.mode.value : null;
+      bcast('joint_build', {
+        player:{name:cp.name, color:cp.color}, ort:ort.name, cost:jointCost, n:cp.jointsBuilt, atRauchspot:!!isRauchspot,
+        factor:(hashFactor(cp)>1 ? hashFactor(cp) : 0), goal:jm,
+        standings:[...state.players].sort((a,b)=>(b.jointsBuilt||0)-(a.jointsBuilt||0)).map(p=>({name:p.name, color:p.color, joints:p.jointsBuilt||0}))
+      });
+      // Ort-Panel erst nach der Zeremonie neu zeichnen (Doppelklick verhindern); Ziel-Abfrage danach
+      jbb.disabled = true; jbb.textContent = '🚬 Joint wird gebaut … schau auf den Beamer';
+      setTimeout(()=>{ if(document.body.contains(panel)) renderOrtResolution(panel, ort); scheduleEndCheck(); }, 12700);
     });
 
     const sw = document.getElementById('ortSpecialWrap');
@@ -6542,11 +6557,11 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         giveJointItem(cp,'papes'); giveJointItem(cp,'tip');
         logEvent(cp, '🎺 Fredis Pfeife gekauft (−'+priceFor(cp,FREDI_PRICE,'fredi')+' Hash, Papes + Tip)');
         renderPlayersGrid(); renderPlayerStrip(); scheduleSave();
-        bcast('waldfest', {player:{name:cp.name,color:cp.color}, cost:roundCost, fredi:'bought', hash:cp.hash, keep:true});
+        bcast('waldfest', {player:{name:cp.name,color:cp.color}, cost:roundCost, fredi:'bought', hash:cp.hash, price:priceFor(cp,FREDI_PRICE,'fredi'), keep:true});
         renderFrediOffer(container, cp, roundCost);
       });
       document.getElementById('frediNoBtn').addEventListener('click', ()=>{
-        bcast('waldfest', {player:{name:cp.name,color:cp.color}, cost:roundCost, fredi:'declined', hash:cp.hash, keep:true});
+        bcast('waldfest', {player:{name:cp.name,color:cp.color}, cost:roundCost, fredi:'declined', hash:cp.hash, price:priceFor(cp,FREDI_PRICE,'fredi'), keep:true});
         renderFrediOffer(container, cp, roundCost);
       });
     }
@@ -6630,7 +6645,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         logEvent(buyer, '-'+bpB+' Hash (Kauf: '+it.name+' bei '+shop.name+', geteilt mit '+partner.name+')');
         logEvent(partner, '-'+bpP+' Hash (Kauf: '+it.name+' bei '+shop.name+', geteilt mit '+buyer.name+')');
         renderPlayersGrid(); renderPlayerStrip(); scheduleSave();
-        bcast('bembel_share', {a:{name:buyer.name,color:buyer.color}, b:{name:partner.name,color:partner.color}});
+        bcast('bembel_share', {a:{name:buyer.name,color:buyer.color}, b:{name:partner.name,color:partner.color}, priceA:bpB, priceB:bpP});
         bembelStage = 'martin';
         setTimeout(()=>{ renderBembelFlow(container, shop, it, buyer); }, 1600);
       });
@@ -6669,7 +6684,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     if(b.pot>0){ html += `<button class="pill-btn ghost" id="bunkerStealBtn">${b.pot} Hash hier klauen</button>`; }
     if(!b.hasItems && b.pot===0){ html = `<p class="desc">Gerade nichts hier.</p>`; }
     container.innerHTML = `<h4 style="margin:16px 0 8px; font-size:14px; font-weight:800; color:var(--text-soft);">Bunker</h4>${html}`;
-    if(!skipBcast) bcast('bunker', { hasItems:b.hasItems, pot:b.pot });
+    if(!skipBcast) bcast('bunker', { hasItems:b.hasItems, pot:b.pot, price:cp ? priceFor(cp,BUNKER_PRICE,'bunker') : BUNKER_PRICE });
     const takeBtn = document.getElementById('bunkerTakeBtn');
     if(takeBtn) takeBtn.addEventListener('click', ()=>{
       const bp = cp ? priceFor(cp,BUNKER_PRICE,'bunker') : BUNKER_PRICE;
@@ -6679,7 +6694,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       giveJointItem(cp,'papes'); giveJointItem(cp,'tabak');
       b.hasItems=false; b.pot+=bp;
       renderPlayersGrid(); renderPlayerStrip(); scheduleSave();
-      bcast('bunker', { hasItems:b.hasItems, pot:b.pot, action:'take', player:{name:cp.name,color:cp.color} });
+      bcast('bunker', { hasItems:b.hasItems, pot:b.pot, action:'take', price:bp, player:{name:cp.name,color:cp.color} });
       renderBunkerPanel(container, true);
     });
     const stealBtn = document.getElementById('bunkerStealBtn');
@@ -6825,10 +6840,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
             ${others.map(p=>`<option value="${p.id}" ${p.id===dorfHerTarget?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}
           </select></div>
           ${target ? `
-          <div class="num-input-row"><label>Einsatz</label><input type="number" id="dorfStakeInput" min="0" value="${dorfHerStake}"></div>
-          <p class="desc" style="margin-top:-6px;">Die herausgeforderte Person (<b>${escapeHtml(target.name)}</b>) legt den Einsatz fest. Gewinner:in bekommt <b>+<span id="dorfStakeShowW">${dorfHerStake}</span></b>, Verlierer:in <b>-<span id="dorfStakeShowL">${dorfHerStake}</span></b>.</p>
-          ${jointStakeHtml(cp, target, dorfHerJoint, 'dorf-joint')}
-          ${itemStakeHtml(cp, target, dorfPick, 'dorf-item')}
+          <div id="dorfStakeHost"></div>
           <div style="margin:12px 0;">
             ${dorfHerGame
               ? `<p class="desc">Gespielt wird: <b>${escapeHtml(dorfHerGame.name)}</b>${dorfHerGame.desc?` <span style="color:var(--text-faint);">– ${escapeHtml(dorfHerGame.desc)}</span>`:''} <button class="pill-btn subtle" id="dorfHerGameReroll" style="margin-left:6px; padding:5px 12px; font-size:11.5px;">🎲 anderes Spiel</button>${pgPlayBtn(dorfHerGame,'dorf-pg-play')}</p>`
@@ -6840,28 +6852,18 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
           ` : `<p class="desc" style="margin-top:10px;">Erst eine Person auswählen.</p>`}
         `;
         document.getElementById('dorfTargetSel').addEventListener('change', e=>{
-          dorfHerTarget = e.target.value || null; dorfHerWinner = null; dorfHerGame = null; dorfHerStake = 50; dorfHerJoint = []; dorfPick = {c:null, t:null};
+          dorfHerTarget = e.target.value || null; dorfHerWinner = null; dorfHerGame = null; dorfStakes = {};
           renderInner();
           const t = dorfHerTarget ? playerById(dorfHerTarget) : null;
-          if(t){ bcast('challenge_setup', {scene:(/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz'), stake:dorfHerStake, challenger:{name:cp.name,color:cp.color}, target:{name:t.name,color:t.color}}); }
+          if(t){ bcast('challenge_setup', {scene:(/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz'), challenger:{name:cp.name,color:cp.color}, target:{name:t.name,color:t.color}}); }
         });
         if(!target) return;
-        document.getElementById('dorfStakeInput').addEventListener('input', e=>{
-          dorfHerStake = Math.max(0, parseInt(e.target.value,10)||0);
-          const w = document.getElementById('dorfStakeShowW'); if(w) w.textContent = dorfHerStake;
-          const l = document.getElementById('dorfStakeShowL'); if(l) l.textContent = dorfHerStake;
-        });
-        document.getElementById('dorfStakeInput').addEventListener('change', ()=>{
-          const sc = (/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz');
-          const ch = {name:cp.name,color:cp.color}, tg = {name:target.name,color:target.color};
-          if(dorfHerGame) bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: dorfHerGame.name, finalDesc: dorfHerGame.desc||'', scene:sc, stake:dorfHerStake, jointStake:dorfHerJoint.map(jointLabel).concat(itemStakeList(cp,target,dorfPick)), challenger:ch, target:tg});
-          else bcast('challenge_setup', {scene:sc, stake:dorfHerStake, challenger:ch, target:tg});
-        });
-        document.querySelectorAll('.dorf-joint .joint-chip').forEach(b=>{ b.addEventListener('click', ()=>{ const k = b.dataset.jk; dorfHerJoint = dorfHerJoint.includes(k) ? dorfHerJoint.filter(x=>x!==k) : dorfHerJoint.concat(k); renderInner(); if(dorfHerGame) bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: dorfHerGame.name, finalDesc: dorfHerGame.desc||'', scene:(/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz'), stake:dorfHerStake, jointStake:dorfHerJoint.map(jointLabel).concat(itemStakeList(cp,target,dorfPick)), challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}}); }); });
-        bindItemChips('dorf-item', dorfPick, ()=>{ renderInner(); if(dorfHerGame) bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: dorfHerGame.name, finalDesc: dorfHerGame.desc||'', scene:(/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz'), stake:dorfHerStake, jointStake:dorfHerJoint.map(jointLabel).concat(itemStakeList(cp,target,dorfPick)), challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}}); });
+        const sc = (/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz'), ch = {name:cp.name,color:cp.color}, tg = {name:target.name,color:target.color};
+        const dorfReveal = ()=>{ if(dorfHerGame) bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: dorfHerGame.name, finalDesc: dorfHerGame.desc||'', scene:sc, stakes:stakeSummary(cp,target,dorfStakes), challenger:ch, target:tg}); else bcast('challenge_setup', {scene:sc, challenger:ch, target:tg}); };
+        mountStakePicker(document.getElementById('dorfStakeHost'), cp, target, dorfStakes, dorfReveal);
         const drawGame = ()=>{
           dorfHerGame = drawMinigame(2);
-          bcast('reveal', {title:'Herausforderung – welches Spiel?', icon:'🎮', pool: minigamePoolForCount(2).map(m=>m.name), finalText: dorfHerGame.name, finalDesc: dorfHerGame.desc||'', scene:(/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz'), stake:dorfHerStake, jointStake:dorfHerJoint.map(jointLabel).concat(itemStakeList(cp,target,dorfPick)), challenger:{name:cp.name,color:cp.color}, target:{name:(playerById(dorfHerTarget)||{}).name, color:(playerById(dorfHerTarget)||{}).color}});
+          dorfReveal();
           renderInner();
         };
         const drawBtn = document.getElementById('dorfHerGameDraw'); if(drawBtn) drawBtn.addEventListener('click', drawGame);
@@ -6874,16 +6876,13 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         pickWrap.querySelectorAll('button').forEach(btn=>{ btn.addEventListener('click', ()=>{ dorfHerWinner=btn.dataset.w; renderInner(); }); });
         document.getElementById('dorfHerApplyBtn').addEventListener('click', ()=>{
           const winner=playerById(dorfHerWinner); if(!winner) return; const loser = winner.id===cp.id?target:cp;
-          let stake = dorfHerStake;
-          pushUndo(); stake = Math.min(stake, loser.hash); winner.hash += stake; loser.hash -= stake; logEvent(winner, '+'+stake+' Hash (Herausforderung gegen '+loser.name+')'); logEvent(loser, '-'+stake+' Hash (Herausforderung gegen '+winner.name+')');
-          const movedJ = applyJointStake(winner, loser, dorfHerJoint);
-          const movedI = applyItemStake(winner, loser, cp, target, dorfPick); if(movedI) movedJ.push('Item '+movedI);
+          pushUndo(); const res = applyStakes(winner, loser, dorfStakes); const stake = res.amount, movedJ = res.moved;
           state.dorfplatzChallengeCount++;
           renderPlayersGrid(); renderPlayerStrip(); scheduleSave();
           document.getElementById('dorfHerResult').innerHTML = `<p class="swap-note">✓ Angewendet. (${state.dorfplatzChallengeCount}/4 bis zum nächsten Turnier)</p>`;
           { const wl = {name:winner.name,color:winner.color,text:'+'+stake+' 🏆'}, ll = {name:loser.name,color:loser.color,text:'-'+stake};
-            bcast('result', {duel:true, pairs:[{winner:wl, loser:ll}], title: ort.name+' – Ergebnis', icon:'🗡️', lines:[wl,ll], scene:(/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz'), stake:stake, jointStake:movedJ, challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}}); dorfHerJoint=[]; }
-          dorfHerTarget=null; dorfHerWinner=null; dorfHerGame=null; dorfHerStake=50; dorfPick={c:null, t:null};
+            bcast('result', {duel:true, pairs:[{winner:wl, loser:ll}], title: ort.name+' – Ergebnis', icon:'🗡️', lines:[wl,ll], scene:(/sport/i.test(ort.name||'')?'sportplatz':'dorfplatz'), stake:stake, jointStake:movedJ, challenger:{name:cp.name,color:cp.color}, target:{name:target.name,color:target.color}}); }
+          dorfHerTarget=null; dorfHerWinner=null; dorfHerGame=null; dorfStakes={};
         });
       }
       renderInner();
@@ -7584,6 +7583,17 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     t.mega = { gameId:g.id, order:[] };
     t.stage = 'megaRank';
   }
+  // Einzelnes Spiel neu auslosen (nur solange das Match noch nicht entschieden ist); das bisherige Spiel wird ausgeschlossen
+  function tourRerollMatch(idx){
+    const t = state.tournament, m = t.matches[idx];
+    if(!m || m.winner) return;
+    const g = tourPickGame(2, t.usedGames.concat(m.gameId)); if(!g) return;
+    t.usedGames.push(g.id); m.gameId = g.id;
+  }
+  function tourRerollMega(){
+    const t = state.tournament; if(!t.mega || t.mega.order.length) return;
+    const g = tourPickGame(t.n, [t.mega.gameId]); if(g) t.mega.gameId = g.id;
+  }
   function tourSetWinner(idx, winnerId){
     const t = state.tournament, m = t.matches[idx];
     if(!m || m.winner) return;
@@ -7683,13 +7693,13 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         const isCur = t.stage==='round' && i===t.cur;
         const nm = (pl,id)=> `${teamDot(pl,10)}${m.winner===id?'<b>':''}${escapeHtml(pl?pl.name:'–')}${m.winner===id?' ✓</b>':''}`;
         if(!isCur){
-          return `<div class="tour-row ${m.winner?'done':'todo'}"><span class="tr-state">${m.winner?'✓':(i+1)}</span><span class="tr-names">${nm(A,m.a)} <span class="tr-vs">vs</span> ${nm(B,m.b)}</span><span class="tr-game">${escapeHtml(g.name)}</span></div>`;
+          return `<div class="tour-row ${m.winner?'done':'todo'}"><span class="tr-state">${m.winner?'✓':(i+1)}</span><span class="tr-names">${nm(A,m.a)} <span class="tr-vs">vs</span> ${nm(B,m.b)}</span><span class="tr-game">${escapeHtml(g.name)}</span>${(t.stage==='round' && !m.winner) ? `<button class="pill-btn subtle" data-tour="reroll" data-i="${i}" title="Anderes Spiel auslosen" style="margin-left:8px; padding:4px 10px; font-size:12px;">🎲</button>` : ''}</div>`;
         }
         return `<div class="result-banner" style="text-align:left; margin-top:8px; ${isCur?'outline:2px solid var(--accent);':(m.winner?'opacity:0.65;':'')}">
           <div style="font-size:12px; font-weight:700; color:var(--text-faint); text-transform:uppercase;">${escapeHtml(tourMatchLabel(m))} · ${escapeHtml(g.name)}</div>
           <div style="font-size:16px; margin:6px 0;">${nm(A,m.a)} <span style="color:var(--text-faint);">vs</span> ${nm(B,m.b)}</div>
           ${isCur ? `<div class="sub" style="margin-bottom:8px;">${escapeHtml(g.desc)}</div>
-            ${pgCanPlay(MINIGAMES_BY_ID[m.gameId]) ? `<button class="pill-btn ghost" data-tour="play" data-i="${i}" style="margin-bottom:10px;">▶ Hier spielen</button>` : ''}
+            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">${pgCanPlay(MINIGAMES_BY_ID[m.gameId]) ? `<button class="pill-btn ghost" data-tour="play" data-i="${i}">▶ Hier spielen</button>` : ''}<button class="pill-btn subtle" data-tour="reroll" data-i="${i}">🎲 Anderes Spiel</button></div>
             <div class="winner-pick" style="margin-bottom:0;"><button data-tour="win" data-i="${i}" data-id="${m.a}">${teamDot(A)}${escapeHtml(A?A.name:'')} gewinnt</button><button data-tour="win" data-i="${i}" data-id="${m.b}">${teamDot(B)}${escapeHtml(B?B.name:'')} gewinnt</button></div>` : ''}
         </div>`;
       }).join('');
@@ -7699,7 +7709,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       title.textContent = '🎮 Mega-Spiel';
       const g = tourGame(t.mega.gameId);
       html = `<div class="result-banner"><div class="big">${escapeHtml(g.name)}</div><div class="sub">${escapeHtml(g.desc)}</div></div>
-        ${(!t.mega.order.length && pgCanPlay(MINIGAMES_BY_ID[t.mega.gameId])) ? `<button class="pill-btn ghost" data-tour="playmega" style="margin-top:8px;">▶ Hier spielen</button>` : ''}
+        ${!t.mega.order.length ? `<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">${pgCanPlay(MINIGAMES_BY_ID[t.mega.gameId]) ? `<button class="pill-btn ghost" data-tour="playmega">▶ Hier spielen</button>` : ''}<button class="pill-btn subtle" data-tour="rerollmega">🎲 Anderes Spiel</button></div>` : ''}
         <h4 style="margin:16px 0 8px; font-size:14px; font-weight:800; color:var(--text-soft);">Platzierung eintragen – tippe der Reihe nach 1., 2., 3. …</h4>
         <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">${t.ids.filter(id=>!t.mega.order.includes(id)).map(id=>{ const pl=playerById(id); return `<button class="pill-btn ghost" data-tour="pick" data-id="${id}">${teamDot(pl)}${escapeHtml(pl?pl.name:'')}</button>`; }).join('')}</div>
         ${t.mega.order.length ? t.mega.order.map((id,i)=>{ const pl=playerById(id); return `<div class="swap-note">#${i+1} ${teamDot(pl)}<b>${escapeHtml(pl?pl.name:'')}</b></div>`; }).join('') : ''}`;
@@ -7730,6 +7740,8 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         const act = btn.dataset.tour;
         if(act==='draw') tourStep(()=>{ if(t.format==='1v1') tourDrawRound(); else tourDrawMega(); });
         else if(act==='next') tourStep(()=>tourDrawRound());
+        else if(act==='reroll') tourStep(()=>tourRerollMatch(parseInt(btn.dataset.i,10)));
+        else if(act==='rerollmega') tourStep(()=>tourRerollMega());
         else if(act==='win') tourStep(()=>tourSetWinner(parseInt(btn.dataset.i,10), btn.dataset.id));
         else if(act==='pick') tourStep(()=>tourMegaPick(btn.dataset.id));
         else if(act==='play'){
@@ -8813,6 +8825,81 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       .wf-rod::after{ content:''; position:absolute; left:0; right:0; top:26px; height:16px; background:radial-gradient(circle at 12px 0, #C9A24A 0 9px, transparent 10px) 0 0/56px 16px; }
       .wf-pelmet{ position:absolute; top:26px; left:0; right:0; height:56px; background:conic-gradient(#0A6DC2 25%, #fff 0 50%, #0A6DC2 0 75%, #fff 0) 0 0/110px 110px; border-bottom:6px solid #D4AF37; box-shadow:0 8px 16px rgba(0,0,0,.5); }
       @keyframes wfPanelIn{ from{ opacity:0; transform:translateY(-30px) scale(.94); } to{ opacity:1; transform:translateY(0) scale(1); } }
+      /* Joint-Bau v2 (Beamer-Zeremonie, ca. 10,5 s): Akt 1 Tisch (Items, Blättchen, Rollen), Akt 2 Büste (Anzünden), Akt 3 Ziehen und Ausatmen, Akt 4 Ergebnis */
+      .bm-joint{ background:#0B1610; }
+      .jb-bg{ position:fixed; inset:0; z-index:0; pointer-events:none; background:radial-gradient(ellipse at 50% 62%, #27402B 0%, #142218 46%, #070d09 100%); }
+      .jb-bg i{ position:absolute; width:5px; height:5px; border-radius:50%; background:#F3E8C8; opacity:.5; animation:jbTwinkle 3.4s ease-in-out infinite; }
+      @keyframes jbTwinkle{ 0%,100%{ opacity:.12; } 50%{ opacity:.75; } }
+      .jb-veil{ position:fixed; inset:0; z-index:1; pointer-events:none; background:radial-gradient(ellipse at 50% 55%, rgba(6,12,8,.25), rgba(6,12,8,.62)); }
+      .jb-fxb, .jb-fxt{ position:fixed; inset:0; pointer-events:none; }
+      .jb-fxb{ z-index:1; } .jb-fxt{ z-index:6; }
+      .jb-haze{ position:absolute; inset:0; pointer-events:none; opacity:0; background:radial-gradient(ellipse at 62% 48%, rgba(232,230,223,.75) 0%, rgba(205,203,196,.4) 38%, rgba(160,160,155,0) 78%); animation:jbHaze 3.6s ease-in-out 7.5s both; }
+      @keyframes jbHaze{ 0%{ opacity:0; transform:scale(.6); } 38%{ opacity:.75; transform:scale(1.15); } 100%{ opacity:.25; transform:scale(1.5); } }
+      .jb-flash{ position:absolute; inset:0; pointer-events:none; opacity:0; background:radial-gradient(circle at 56% 52%, #fff6cf 0%, rgba(255,200,120,0) 70%); animation:jbFlash .5s ease-out 5.15s both; }
+      @keyframes jbFlash{ 0%{ opacity:0; } 15%{ opacity:.8; } 100%{ opacity:0; } }
+      .jb-vig{ position:absolute; inset:0; pointer-events:none; opacity:0; background:radial-gradient(ellipse at 56% 52%, rgba(255,140,40,0) 32%, rgba(255,100,20,.34) 100%); animation:jbVig 1.3s ease-in-out 6.2s both; }
+      @keyframes jbVig{ 0%{ opacity:0; } 45%{ opacity:1; } 100%{ opacity:0; } }
+      .jb-stage{ position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:min(1.6vh,18px); }
+      .jb-title{ font-size:min(36px,4.2vh); font-weight:800; letter-spacing:.2em; text-transform:uppercase; color:#E8CE6B; text-shadow:0 2px 14px rgba(0,0,0,.7); animation:bmFadeUp .7s ease-out both; }
+      .jb-sub{ display:flex; align-items:center; justify-content:center; gap:14px; font-size:min(32px,3.8vh); font-weight:800; color:#F3E8C8; text-shadow:0 2px 10px rgba(0,0,0,.7); animation:bmFadeUp .7s ease-out .2s both; }
+      .jb-sub .bm-av{ width:min(7vh,64px) !important; height:min(7vh,64px) !important; }
+      .jb-acts{ position:relative; width:min(92vw,1300px); height:min(47vh,470px); }
+      /* Akt 1: Tisch */
+      .jb-act1{ position:absolute; inset:0; animation:jbPush 4.4s ease-in 0s both, jbOut .6s ease-in 4.0s forwards; }
+      @keyframes jbPush{ from{ transform:scale(1); } to{ transform:scale(1.07); } }
+      @keyframes jbOut{ from{ opacity:1; filter:blur(0); transform:scale(1.07); } to{ opacity:0; filter:blur(16px); transform:scale(1.35); } }
+      .jb-board{ position:absolute; left:7%; bottom:4%; width:86%; height:46%; border-radius:28px; background:repeating-linear-gradient(90deg, rgba(0,0,0,.14) 0 3px, rgba(255,255,255,.04) 3px 11px, rgba(0,0,0,.1) 11px 26px), linear-gradient(180deg,#6a4627,#3c2714); box-shadow:0 22px 44px rgba(0,0,0,.6), inset 0 3px 0 rgba(255,255,255,.14), inset 0 -6px 14px rgba(0,0,0,.35); animation:bmFadeUp .8s ease-out both; }
+      .jb-item{ position:absolute; top:22%; width:min(9vw,125px); height:min(9vw,125px); opacity:0; transform:translate(-50%,-50%); animation:jbIn .65s cubic-bezier(.3,1.5,.5,1) calc(.25s + var(--i)*.38s) both, jbMerge .7s cubic-bezier(.6,0,.9,.4) 1.9s forwards; }
+      .jb-item b{ position:absolute; left:50%; top:104%; transform:translateX(-50%); white-space:nowrap; font-size:min(22px,2.7vh); color:#E8CE6B; letter-spacing:.06em; text-shadow:0 2px 6px rgba(0,0,0,.8); }
+      @keyframes jbIn{ from{ opacity:0; transform:translate(-50%,-50%) translateY(-18vh) rotate(-50deg) scale(.3); } to{ opacity:1; transform:translate(-50%,-50%) rotate(0) scale(1); } }
+      @keyframes jbMerge{ 0%{ opacity:1; left:var(--l); top:22%; transform:translate(-50%,-50%) scale(1); } 75%{ opacity:1; } 100%{ opacity:0; left:50%; top:66%; transform:translate(-50%,-50%) scale(.25); } }
+      .jb-jsvg{ position:absolute; left:50%; top:60%; width:90%; transform:translate(-50%,-50%); overflow:visible; }
+      .jb-sheet{ transform-box:fill-box; transform-origin:50% 50%; opacity:0; animation:jbPaperIn .6s cubic-bezier(.3,1.4,.5,1) 1.6s both, jbRollUp 1.0s cubic-bezier(.5,0,.3,1) 2.8s forwards; }
+      @keyframes jbPaperIn{ from{ opacity:0; transform:translateY(-70px) rotate(-6deg) scale(.85); } to{ opacity:1; transform:none; } }
+      @keyframes jbRollUp{ from{ transform:scaleY(1); } to{ transform:scaleY(.46); } }
+      .jb-cyl{ opacity:0; animation:jbFade .8s ease 3.0s forwards; }
+      @keyframes jbFade{ to{ opacity:1; } }
+      .jb-crumb2{ opacity:0; animation:jbPop .25s ease-out calc(2.0s + var(--k)*.045s) forwards; }
+      @keyframes jbPop{ from{ opacity:0; transform:translateY(-16px); } to{ opacity:1; transform:none; } }
+      .jb-tobhide{ animation:jbTobOut .5s ease 3.2s forwards; }
+      @keyframes jbTobOut{ to{ opacity:0; } }
+      .jb-filt{ opacity:0; animation:jbSlideIn .6s cubic-bezier(.3,1.2,.5,1) 2.4s forwards; }
+      @keyframes jbSlideIn{ from{ opacity:0; transform:translateX(-120px); } to{ opacity:1; transform:none; } }
+      .jb-lick{ opacity:0; animation:jbLick .5s ease-in-out 3.6s forwards; }
+      @keyframes jbLick{ 0%{ opacity:0; transform:translateX(-40px); } 30%{ opacity:.9; } 100%{ opacity:0; transform:translateX(480px); } }
+      .jb-twist{ opacity:0; transform-box:fill-box; transform-origin:0 50%; animation:jbTwistIn .4s cubic-bezier(.3,1.4,.5,1) 3.85s forwards; }
+      @keyframes jbTwistIn{ from{ opacity:0; transform:scaleX(.1); } to{ opacity:1; transform:scaleX(1); } }
+      .jb-jshadow{ opacity:0; animation:jbFade .6s ease 3.4s forwards; }
+      /* Akt 2/3: Büste */
+      .jb-act2{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:0; animation:jbAct2In .01s linear 4.3s forwards, jbShake .45s linear 5.15s; }
+      @keyframes jbAct2In{ to{ opacity:1; } }
+      @keyframes jbShake{ 0%,100%{ translate:0 0; } 20%{ translate:-6px 3px; } 40%{ translate:5px -3px; } 60%{ translate:-4px 2px; } 80%{ translate:3px -2px; } }
+      .jb-bustwrap{ position:relative; width:min(34vw,46vh); height:min(34vw,46vh); animation:jbBustIn .9s cubic-bezier(.3,1.5,.5,1) 4.3s both, jbInhale 1.2s ease-in-out 6.2s forwards, jbExhale 1.5s ease-in-out 7.5s forwards; }
+      .jb-bustwrap > .bm-av{ width:100% !important; height:100% !important; box-shadow:0 20px 60px rgba(0,0,0,.6); }
+      .jb-bustwrap svg{ display:block; }
+      @keyframes jbBustIn{ from{ opacity:0; transform:translateY(40vh) scale(.6); } to{ opacity:1; transform:none; } }
+      @keyframes jbInhale{ from{ transform:scale(1); } to{ transform:scale(1.07); } }
+      @keyframes jbExhale{ 0%{ transform:scale(1.07); } 30%{ transform:scale(.98) rotate(-4deg) translateY(6px); } 100%{ transform:scale(1) rotate(0); } }
+      .jb-glow{ position:absolute; left:var(--tx); top:var(--ty); width:24%; height:24%; border-radius:50%; background:radial-gradient(circle, #FFF2B0 0%, #FF8A2A 34%, rgba(255,80,20,0) 70%); mix-blend-mode:screen; pointer-events:none; opacity:0; transform:translate(-50%,-50%) scale(.3); animation:jbGlowLow 1s ease-out 5.35s forwards, jbGlowDrag 1.3s ease-in-out 6.2s forwards, jbGlowIdle 1.1s ease-in-out 7.6s infinite alternate; }
+      @keyframes jbGlowLow{ from{ opacity:0; transform:translate(-50%,-50%) scale(.3); } to{ opacity:.55; transform:translate(-50%,-50%) scale(.7); } }
+      @keyframes jbGlowDrag{ 0%{ opacity:.55; transform:translate(-50%,-50%) scale(.7); } 50%{ opacity:1; transform:translate(-50%,-50%) scale(1.6); } 100%{ opacity:.7; transform:translate(-50%,-50%) scale(1); } }
+      @keyframes jbGlowIdle{ from{ opacity:.55; transform:translate(-50%,-50%) scale(.9); } to{ opacity:.85; transform:translate(-50%,-50%) scale(1.1); } }
+      .jb-lighter{ position:absolute; left:var(--tx); top:var(--ty); width:17%; transform:translate(-34%,-6%); opacity:0; pointer-events:none; animation:jbLighter 1.1s ease-out 5.0s both; }
+      @keyframes jbLighter{ 0%{ opacity:0; transform:translate(-34%,40%); } 18%{ opacity:1; transform:translate(-34%,-6%); } 78%{ opacity:1; } 100%{ opacity:0; transform:translate(-34%,30%); } }
+      .jb-lighter .fl{ transform-box:fill-box; transform-origin:50% 100%; animation:jbFlick2 .16s ease-in-out infinite alternate; }
+      @keyframes jbFlick2{ from{ transform:scale(.9,1) skewX(-4deg); } to{ transform:scale(1.08,1.12) skewX(4deg); } }
+      .jb-xpuff{ position:absolute; left:var(--mx); top:var(--my); width:24%; height:24%; border-radius:50%; opacity:0; filter:blur(8px); pointer-events:none; background:radial-gradient(circle, rgba(244,242,235,.95), rgba(210,209,201,.55) 55%, rgba(190,190,185,0) 72%); animation:jbXPuff 3.2s ease-out calc(7.55s + var(--d)*.14s) both; }
+      @keyframes jbXPuff{ 0%{ opacity:0; transform:translate(-50%,-50%) scale(.2); } 12%{ opacity:.95; } 100%{ opacity:0; transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(var(--s)); } }
+      .jb-tpuff{ position:absolute; left:var(--tx); top:var(--ty); width:10%; height:10%; border-radius:50%; opacity:0; filter:blur(5px); pointer-events:none; background:radial-gradient(circle, rgba(235,233,226,.8), rgba(210,209,201,0) 70%); animation:jbTrickle 3.4s linear calc(5.7s + var(--d)*.85s) infinite; }
+      @keyframes jbTrickle{ 0%{ opacity:0; transform:translate(-50%,-50%) scale(.4); } 15%{ opacity:.7; } 100%{ opacity:0; transform:translate(calc(-50% + var(--dx)), -300%) scale(2.2); } }
+      /* Akt 4: Ergebnis */
+      .jb-result{ display:flex; flex-direction:column; align-items:center; gap:min(1.4vh,14px); padding:1.2vh 3vw; border-radius:28px; background:rgba(6,12,8,.6); position:relative; z-index:4; opacity:0; animation:bmFadeUp .7s ease-out 8.4s both; }
+      .jb-nr{ font-size:min(84px,10vh); font-weight:800; color:#E8CE6B; line-height:1; text-shadow:0 0 34px rgba(232,206,107,.55), 0 4px 0 #5a4410; }
+      .jb-chips{ display:flex; flex-wrap:wrap; gap:14px; justify-content:center; }
+      .jb-chip{ font-size:min(32px,3.8vh); font-weight:800; padding:.5vh 26px; border-radius:100px; background:rgba(14,28,17,.7); border:1.5px solid rgba(212,175,55,.5); color:#F3E8C8; }
+      .jb-chip.bad{ color:#FF9A8A; } .jb-chip.good{ color:#8FE8A0; }
+      .jb-rank{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; opacity:0; animation:bmFadeUp .7s ease-out 9.1s both; }
+      .jb-rank .bm-result-line{ font-size:min(26px,3.2vh); padding:.6vh 22px; }
       /* Waldfest: Fredi */
       .wf-fredi{ position:fixed; right:7vw; bottom:0; height:min(62vh,620px); aspect-ratio:400/460; z-index:4; pointer-events:none; opacity:0; animation:wfFrediIn .9s cubic-bezier(.3,1.3,.5,1) 3.2s both; }
       @keyframes wfFrediIn{ from{ opacity:0; transform:translateY(40%); } to{ opacity:1; transform:translateY(0); } }
@@ -12112,7 +12199,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         title = nm+' hat geklaut!';
         sub = 'Papes & Tabak liegen wieder bereit.';
       } else if(data.hasItems){
-        title = 'Hier liegen Papes & Tabak'; sub = 'Mitnehmen kostet 50 Hash.';
+        title = 'Hier liegen Papes & Tabak'; sub = 'Mitnehmen kostet '+(data.price!=null ? data.price : 30)+' Hash.';
       } else if(data.pot>0){
         title = data.pot+' Hash liegen hier'; sub = 'Wer traut sich, sie zu klauen?';
       }
@@ -12122,7 +12209,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         action: data.action||''
       });
       let turn = '';
-      if(pl && data.action==='take') turn = `<div class="dd-turn">${nameTag(pl,28)} <span style="color:#FF7A6A;">−50</span></div>`;
+      if(pl && data.action==='take') turn = `<div class="dd-turn">${nameTag(pl,28)} <span style="color:#FF7A6A;">−${data.price!=null ? data.price : 30}</span></div>`;
       else if(pl && data.action==='steal') turn = `<div class="dd-turn">${nameTag(pl,28)} <span id="bunkerStealAmt" style="color:#7CE08A;"></span></div>`;
       root.className = 'bm-root bm-scene bm-scene-dorf';
       root.innerHTML = scene + `<div class="dd-stage"><div class="dd-stage-title">Bunker</div><div class="dd-stage-sub">${escapeHtml(title)}</div>${sub ? `<div class="dd-stage-sub" style="font-size:min(30px,3.6vh); animation-delay:.45s;">${escapeHtml(sub)}</div>` : ''}</div>${turn}`;
@@ -12189,7 +12276,17 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     function ddHud(a,b,loseSide){
       return `<div class="dd-hud"><div class="dd-bar left${loseSide==='a'?' dd-lose':''}"><div class="dd-plate">${nameTag(a,24)}</div><div class="dd-hp"><i class="trail"></i><i class="fill"></i></div></div><div class="dd-mid">VS</div><div class="dd-bar right${loseSide==='b'?' dd-lose':''}"><div class="dd-plate">${nameTag(b,24)}</div><div class="dd-hp"><i class="trail"></i><i class="fill"></i></div></div></div>`;
     }
-    function stakeLineHTML(data){ const hasH = data.stake!=null && Number(data.stake)>0, js = (data.jointStake||[]).map(escapeHtml).join(', '); if(!hasH && !js) return ''; return `<div class="dd-stake">Einsatz ${hasH ? `<b>${escapeHtml(String(data.stake))}</b> Hash` : ''}${hasH && js ? ' + ' : ''}${js ? `<b>${js}</b>` : ''}</div>`; }
+    function stakeLineHTML(data){
+      // Pro Person: „Fredi setzt 50 Hash + Papes“
+      if(Array.isArray(data.stakes)){
+        const parts = data.stakes.map(s=>{
+          const its = (s.items||[]).map(escapeHtml).join(', '), hasH = Number(s.hash)>0;
+          if(!hasH && !its) return `<span>${escapeHtml(s.name)} setzt <b>nichts</b></span>`;
+          return `<span>${escapeHtml(s.name)} setzt <b>${hasH ? escapeHtml(String(s.hash))+' Hash' : ''}${hasH && its ? ' + ' : ''}${its}</b></span>`;
+        });
+        return `<div class="dd-stake">${parts.join(' &nbsp;·&nbsp; ')}</div>`;
+      }
+      const hasH = data.stake!=null && Number(data.stake)>0, js = (data.jointStake||[]).map(escapeHtml).join(', '); if(!hasH && !js) return ''; return `<div class="dd-stake">Einsatz ${hasH ? `<b>${escapeHtml(String(data.stake))}</b> Hash` : ''}${hasH && js ? ' + ' : ''}${js ? `<b>${js}</b>` : ''}</div>`; }
     function renderDorfDuel(phase, data){
       const hasScene = /^(dorfplatz|sportplatz)$/.test(data.scene||'');
       root.className = hasScene ? 'bm-root bm-scene bm-scene-dorf bm-scene-duel' : 'bm-root bm-scene-duel bm-duel-plain';
@@ -12312,7 +12409,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       root.innerHTML = bgSceneStart() + `<div class="bm-center"><div class="bg-chalk">
         <div class="bg-title">Bembel geteilt<i></i></div>
         <div class="bg-pairline">${nameTag(data.a,34)} <span class="bm-heartbeat bg-heart">${icon('heart','1em')}</span> ${nameTag(data.b,34)}</div>
-        <div class="bg-lines"><div class="bg-line" style="--i:0;">${nameTag(data.a,26)}<b>−50</b></div><div class="bg-line" style="--i:1;">${nameTag(data.b,26)}<b>−50</b></div></div>
+        <div class="bg-lines"><div class="bg-line" style="--i:0;">${nameTag(data.a,26)}<b>−${data.priceA!=null ? data.priceA : 30}</b></div><div class="bg-line" style="--i:1;">${nameTag(data.b,26)}<b>−${data.priceB!=null ? data.priceB : 30}</b></div></div>
       </div>${bgMugsMarkup()}</div>` + bgMartinBlock({say:'Zum Wohl, ihr zwei!'});
       setTimeout(()=>sndGood(), 500);
     }
@@ -12517,15 +12614,16 @@ function waldfestSceneMarkup(){
       const bub = el.querySelector('.wf-fb'), t5 = document.querySelector('.wf-t5');
       const say = (txt,ms)=>{ bub.textContent = txt; bub.classList.add('show'); clearTimeout(el._hide); if(ms) el._hide = setTimeout(()=>bub.classList.remove('show'), ms); };
       const shout = (txt)=>{ el.classList.add('shout'); frediShout(); say(txt, 2300); T(()=>el.classList.remove('shout'), 1800); };
+      const fprice = data.price!=null ? data.price : 30;
       const st = (data.fredi===true || data.fredi===false || data.fredi==null) ? 'offer' : data.fredi;
       el.dataset.st = st;
       el.classList.remove('drink','give','nopipe','shout');
       bub.classList.remove('show');
       if(t5) t5.classList.remove('show');
       const loop = ()=>{ el.classList.add('drink'); T(()=>{ el.classList.remove('drink'); shout('ÖÖÖÖÖÖÖÖP!'); T(loop, 2300); }, window.FREDI_DRINK_MS||10000); };
-      if(st==='offer'){ T(()=>shout('ÖÖÖÖÖÖÖÖÖP!'), L); T(()=>say('Willst du die Pfeife für 10 Bier (50 Hash)?'), L+2500); }
+      if(st==='offer'){ T(()=>shout('ÖÖÖÖÖÖÖÖÖP!'), L); T(()=>say('Willst du die Pfeife für 10 Bier ('+fprice+' Hash)?'), L+2500); }
       else if(st==='poor'){ T(()=>shout('ÖÖÖÖÖÖÖÖÖP!'), L); T(()=>say('Des reicht ned, du hast nur '+(data.hash!=null?data.hash:'wenig')+' Hash.'), L+2500); }
-      else if(st==='bought'){ el.classList.add('give'); say('Prost! Zum Wohl!', 2600); if(t5){ t5.textContent = '−50 Hash · Papes + Tip'; t5.classList.add('show'); } T(loop, 3000); }
+      else if(st==='bought'){ el.classList.add('give'); say('Prost! Zum Wohl!', 2600); if(t5){ t5.textContent = '−'+fprice+' Hash · Papes + Tip'; t5.classList.add('show'); } T(loop, 3000); }
       else if(st==='declined'){ el.classList.add('nopipe'); say('Na gut, dann halt ned.', 4000); }
       else if(st==='owned'){ el.classList.add('nopipe'); T(()=>shout('ÖÖÖÖÖÖÖÖÖP!'), L); T(loop, L+2600); }
     }
@@ -12648,6 +12746,124 @@ function waldfestSceneMarkup(){
     const COLLAGE_SCENES = ['kirche','kapelle','bunker','schwimmbad','dorfplatz','sportplatz','kalkwerk','holler'];
     function collageMarkup(){
       return `<div class="bm-collage">${COLLAGE_SCENES.map(k=>{ try{ return `<div class="bm-collage-tile">${sceneBgMarkup(k)}</div>`; }catch(e){ return '<div class="bm-collage-tile"></div>'; } }).join('')}</div>`;
+    }
+    // ---------- Joint-Bau v2: Zeremonie (ca. 10,5 s): Tisch (Items, Blättchen, Rollen) → Büste (Anzünden, Ziehen, Ausatmen) → Ergebnis + Rangliste ----------
+    // Rauschen durch Filter (Papier, Feuer, Atem) – klingt natürlicher als reine Töne
+    function noiseBurst(start, dur, freq, vol, type, sweepTo){
+      const ctx = audioCtx(); if(!ctx) return;
+      const n = Math.max(1, Math.floor(ctx.sampleRate*dur)), buf = ctx.createBuffer(1, n, ctx.sampleRate), d = buf.getChannelData(0);
+      for(let i=0;i<n;i++) d[i] = (Math.random()*2-1);
+      const src = ctx.createBufferSource(); src.buffer = buf;
+      const f = ctx.createBiquadFilter(); f.type = type || 'bandpass'; f.frequency.setValueAtTime(freq, ctx.currentTime+start); f.Q.value = 0.9;
+      if(sweepTo) f.frequency.exponentialRampToValueAtTime(sweepTo, ctx.currentTime+start+dur);
+      const g = ctx.createGain(), v = vol!=null ? vol : 0.05, t0 = ctx.currentTime+start;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(v, t0+Math.min(0.06, dur*0.3)); g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+      src.connect(f); f.connect(g); g.connect(ctx.destination); src.start(t0); src.stop(t0+dur+0.02);
+    }
+    function renderJointBuild(data){
+      // Hintergrund = Szene des Ortes, an dem gebaut wird (sonst Nachthimmel)
+      const on = String(data.ort||'');
+      const kind = /kapelle/i.test(on) ? 'kapelle' : /kirche/i.test(on) ? 'kirche' : /bunker/i.test(on) ? 'bunker' : /schwimmbad/i.test(on) ? 'schwimmbad'
+        : /kalkwerk/i.test(on) ? 'kalkwerk' : /holler/i.test(on) ? 'holler' : /dorfplatz/i.test(on) ? 'dorfplatz' : /sportplatz/i.test(on) ? 'sportplatz' : /biergarten/i.test(on) ? 'biergarten' : '';
+      let sceneBg = '';
+      root.className = 'bm-root bm-scene bm-joint';
+      if(kind==='biergarten'){ root.className = 'bm-root bm-bgstyle bm-joint'; sceneBg = `<div class="shop-scene biergarten">${biergartenBackdrop()}</div>`; }
+      else if(kind){ try{ sceneBg = sceneBgMarkup(kind); root.className = 'bm-root bm-scene bm-scene-dorf bm-joint'; }catch(e){ sceneBg = ''; } }
+      const pl = data.player || {};
+      const col = escapeAttr(pl.color||'#9CFF9C');
+      // Büste mit Joint im Mund: der Charakter-Renderer kennt das Zubehör „Joint“ (Index 2) und setzt es passend an den Mund.
+      let bust = '';
+      const ch = bmCharOf(pl);
+      if(ch && ch.cfg && typeof RBChar!=='undefined'){
+        try{
+          const cfg = JSON.parse(JSON.stringify(ch.cfg));
+          cfg.extra = {s:2, c:'#C98F52', c2:'#FF6A1F', c3:'#F7F1DE'};
+          bust = `<span class="bm-dot bm-av" style="background:${escapeAttr(ch.bg||'#C9D6DC')}; border:4px solid ${col};">${RBChar.render(cfg,{viewBox:'38 30 124 124'})}</span>`;
+        }catch(e){ bust = ''; }
+      }
+      if(!bust){
+        bust = `<span class="bm-dot bm-av" style="background:${col}; border:4px solid #F3E8C8; display:flex; align-items:center; justify-content:center;"><svg viewBox="0 0 100 100" width="100%" height="100%"><text x="40" y="66" text-anchor="middle" font-size="56" font-weight="800" fill="rgba(255,255,255,.85)">${escapeHtml((pl.name||'?').charAt(0).toUpperCase())}</text><g transform="rotate(-18 50 70)"><rect x="50" y="68" width="40" height="7" rx="3" fill="#F7F1DE"/><rect x="50" y="68" width="9" height="7" rx="2" fill="#C98F52"/><rect x="84" y="67.5" width="9" height="8" rx="3" fill="#FF6A1F"/></g></svg></span>`;
+      }
+      const stars = Array.from({length:42}, ()=>`<i style="left:${(Math.random()*100).toFixed(1)}%; top:${(Math.random()*58).toFixed(1)}%; animation-delay:-${(Math.random()*3.4).toFixed(1)}s;"></i>`).join('');
+      const lefts = ['14%','38%','62%','86%'];
+      const items = JOINT_KEYS.map((j,i)=>`<div class="jb-item" style="--i:${i}; --l:${lefts[i]}; left:${lefts[i]};">${jointBadgeHTML(j.k, 100, true, '100%')}<b>${escapeHtml(j.label)}</b></div>`).join('');
+      const crumbs = Array.from({length:22}, (_,i)=>`<circle class="jb-crumb2 jb-tobhide" style="--k:${i};" cx="${(230+i*20+Math.random()*10).toFixed(0)}" cy="${(104+Math.random()*12).toFixed(0)}" r="${(3+Math.random()*3).toFixed(1)}" fill="${i%3===0?'#5B7A2E':'#6B4A22'}"/>`).join('');
+      const jointSvg = `<svg class="jb-jsvg" viewBox="0 0 800 220" aria-hidden="true">
+        <defs>
+          <linearGradient id="jbCylG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/><stop offset=".78" stop-color="#7a6a44" stop-opacity=".22"/><stop offset="1" stop-color="#4a3c20" stop-opacity=".55"/></linearGradient>
+          <linearGradient id="jbFiltG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E7B77A"/><stop offset="1" stop-color="#A46E38"/></linearGradient>
+        </defs>
+        <ellipse class="jb-jshadow" cx="420" cy="150" rx="320" ry="14" fill="rgba(0,0,0,.4)"/>
+        <g class="jb-sheet">
+          <rect x="150" y="70" width="560" height="80" rx="6" fill="#F7F1DE" stroke="#CDBF98" stroke-width="3"/>
+          <rect x="150" y="70" width="560" height="14" rx="4" fill="#E9DDB4"/>
+          <path d="M190 110 H680 M190 122 H680" stroke="#E4D8B2" stroke-width="2"/>
+          <rect class="jb-cyl" x="150" y="70" width="560" height="80" rx="6" fill="url(#jbCylG)"/>
+          <path class="jb-cyl" d="M230 70 L246 150 M360 70 L372 150 M500 70 L510 150 M620 70 L632 150" stroke="rgba(120,100,60,.22)" stroke-width="2"/>
+        </g>
+        ${crumbs}
+        <g class="jb-filt"><rect x="62" y="91" width="106" height="38" rx="6" fill="url(#jbFiltG)" stroke="#7A5226" stroke-width="3"/><path d="M82 92 V128 M102 92 V128 M122 92 V128 M142 92 V128" stroke="#7A5226" stroke-width="2.4" opacity=".55"/></g>
+        <rect class="jb-lick" x="160" y="86" width="80" height="6" rx="3" fill="#fff"/>
+        <path class="jb-twist" d="M706 92 L752 104 Q760 110 752 116 L706 128 Q716 110 706 92Z" fill="#F0E6C4" stroke="#CDBF98" stroke-width="3" stroke-linejoin="round"/>
+        <circle cx="758" cy="110" r="5" fill="#4A6B2A" class="jb-twist"/>
+      </svg>`;
+      const xpuffs = Array.from({length:14}, (_,i)=>`<i class="jb-xpuff" style="--d:${i}; --dx:${(40+Math.random()*110).toFixed(0)}%; --dy:${(-20-Math.random()*90).toFixed(0)}%; --s:${(4+Math.random()*3).toFixed(1)}; margin-left:${(Math.random()*4-2).toFixed(1)}%;"></i>`).join('');
+      const tpuffs = Array.from({length:4}, (_,i)=>`<i class="jb-tpuff" style="--d:${i}; --dx:${(Math.random()*24-6).toFixed(0)}%;"></i>`).join('');
+      const lighter = `<svg class="jb-lighter" viewBox="0 0 60 130" aria-hidden="true"><g class="fl"><path d="M30 6 C14 34 16 50 30 62 C44 50 46 34 30 6Z" fill="#FF8A2A"/><path d="M30 28 C22 42 24 52 30 58 C36 52 38 42 30 28Z" fill="#FFE26A"/></g><rect x="14" y="64" width="32" height="58" rx="7" fill="#C9CCD1" stroke="#6b6f78" stroke-width="3"/><rect x="14" y="64" width="32" height="12" rx="5" fill="#E8590C"/></svg>`;
+      const factor = Number(data.factor)||0, n = Number(data.n)||1;
+      const chips = [
+        `<span class="jb-chip bad" id="jbCost">−${Number(data.cost)||0} Hash</span>`,
+        `<span class="jb-chip">⏭ setzt nächste Runde aus</span>`,
+        data.atRauchspot ? `<span class="jb-chip good">Rauchspot-Preis</span>` : '',
+        factor>1 ? `<span class="jb-chip good">Hash ×${+factor.toFixed(2)}</span>` : '',
+        data.goal ? `<span class="jb-chip good">${n} / ${Number(data.goal)} Joints</span>` : ''
+      ].join('');
+      const rank = (data.standings||[]).map(s=>`<div class="bm-result-line">${nameTag(s,26)} <span style="color:#E8CE6B;">🚬 ${s.joints}${data.goal ? ' / '+Number(data.goal) : ''}</span></div>`).join('');
+      root.innerHTML = (sceneBg ? sceneBg + '<div class="jb-veil"></div>' : `<div class="jb-bg">${stars}</div>`) + `<div class="jb-fxb"><div class="jb-haze"></div><div class="jb-vig"></div></div><div class="jb-fxt"><div class="jb-flash"></div></div>
+        <div class="jb-stage">
+          <div class="jb-title">Joint-Bau</div>
+          <div class="jb-sub">${nameTag(pl,26)}</div>
+          <div class="jb-acts">
+            <div class="jb-act1"><div class="jb-board"></div>${items}${jointSvg}</div>
+            <div class="jb-act2"><div class="jb-bustwrap">${bust}<i class="jb-glow"></i>${lighter}${tpuffs}${xpuffs}</div></div>
+          </div>
+          <div class="jb-result"><div class="jb-nr">Joint Nr. ${n}</div><div class="jb-chips">${chips}</div></div>
+          ${rank ? `<div class="jb-rank">${rank}</div>` : ''}
+        </div>`;
+      // Position von Glut (Joint-Ende) und Mund (Joint-Anfang) in der Büste als Prozentwerte (unabhängig von Skalierungsanimationen)
+      const wrap = root.querySelector('.jb-bustwrap');
+      let tx = .78, ty = .6, mx = .52, my = .64;
+      try{
+        const wr = wrap.getBoundingClientRect();
+        const rc = sel=>{ const e = wrap.querySelector(sel); if(!e) return null; const b = e.getBoundingClientRect(); return [ (b.left+b.width/2-wr.left)/wr.width, (b.top+b.height/2-wr.top)/wr.height ]; };
+        const em = rc('rect[fill="#FF6A1F"]'), mo = rc('rect[fill="#C98F52"]');
+        if(em && isFinite(em[0]) && isFinite(em[1])){ tx = em[0]; ty = em[1]; }
+        if(mo && isFinite(mo[0]) && isFinite(mo[1])){ mx = mo[0]; my = mo[1]; }
+      }catch(e){}
+      [['--tx',tx],['--ty',ty],['--mx',mx],['--my',my]].forEach(([k,v])=>wrap.style.setProperty(k, (v*100).toFixed(1)+'%'));
+      // Ton (Web-Audio-Synthesizer); Zeitpunkte passen zu den CSS-Animationen
+      const T = (fn,ms)=>setTimeout(()=>{ if(root.querySelector('.jb-stage')) fn(); }, ms);
+      [440,554,659,784].forEach((f,i)=>T(()=>tone(f,0,.16,{type:'triangle',vol:.1}), 500+i*380));
+      T(()=>noiseBurst(0,.35,3500,.05), 1600);                                   // Blättchen landet
+      for(let i=0;i<8;i++) T(()=>noiseBurst(0,.04,6500,.03,'highpass'), 2000+i*90);   // Tabak rieselt
+      T(()=>tone(260,0,.25,{type:'triangle',sweepTo:180,vol:.08}), 2400);        // Filter
+      T(()=>noiseBurst(0,1.0,2600,.06,'bandpass',1700), 2800);                    // Rollen
+      T(()=>noiseBurst(0,.3,1300,.04), 3650);                                    // Lecken
+      T(()=>noiseBurst(0,.55,300,.09,'bandpass',2600), 4100);                     // Schnitt (Wusch)
+      T(()=>tone(170,0,.32,{type:'sine',sweepTo:330,vol:.1}), 4400);              // Büste springt ein
+      T(()=>{ tone(2400,0,.02,{type:'square',vol:.06}); }, 5100);                // Feuerzeug-Klick
+      T(()=>{ tone(2100,0,.02,{type:'square',vol:.05}); noiseBurst(0,.5,900,.07,'lowpass',250); }, 5160);   // Flamme
+      for(let i=0;i<14;i++) T(()=>noiseBurst(0,.018,4500,.04,'highpass'), 5500+Math.random()*1800);       // Knistern
+      T(()=>noiseBurst(0,1.1,400,.05,'bandpass',1500), 6200);                     // Einatmen
+      T(()=>noiseBurst(0,1.5,3200,.06,'lowpass',700), 7500);                      // Ausatmen
+      T(()=>{
+        sndFanfare();
+        const wrapC = document.createElement('div'); wrapC.className = 'bm-confetti-wrap';
+        const em = ['🚬','💨','✨','🍃'];
+        wrapC.innerHTML = Array.from({length:22}, ()=>`<div class="bm-confetti-piece" style="left:${(Math.random()*100).toFixed(1)}%; font-size:${22+Math.random()*18}px; animation-duration:${(2.6+Math.random()*2).toFixed(2)}s; animation-delay:${(Math.random()*.8).toFixed(2)}s;">${em[Math.floor(Math.random()*em.length)]}</div>`).join('');
+        root.appendChild(wrapC);
+        const c = document.getElementById('jbCost'); if(c) animateNumberIn(c, c.textContent);
+      }, 8400);
     }
     function renderGameEnd(data){
       root.className = 'bm-root bm-scene';
@@ -13075,26 +13291,35 @@ function waldfestSceneMarkup(){
       else if(msg.screen==='weather') renderWeather(data);
       else if(msg.screen==='tournament') renderTournament(data);
       else if(msg.screen==='regen_bunker') renderRegenBunker(data);
+      else if(msg.screen==='joint_build') renderJointBuild(data);
       else renderBase();
     }
     let lockUntil = 0;
     // 2.3.80: Während eines gesperrten Screens (Taxi, „Gelandet auf …“) werden alle eintreffenden Screens in einer Warteschlange gesammelt
     // und danach der Reihe nach gezeigt (statt nur der letzte). Zwischen zwei Screens liegen 1,2 s, bei langer Schlange nur 0,5 s.
     let screenQ = [], drainTimer = null;
+    // Mindest-Anzeigedauer (ms): Ereigniskarte, Ergebnis, Aufdeckung und Polizei-Ergebnis bleiben lesbar stehen, bevor der nächste Screen kommt
+    // (vorher: Karte mit Begründung war nach Sekundenbruchteilen vom „−30 Hash“-Ergebnis überdeckt). Folge-Screens laufen über die Warteschlange.
+    const SCREEN_DWELL = { card:6000, result:4500, reveal:3500, police_result:4500, bembel_share:4500 };
+    function applyScreenDwell(msg){
+      applyScreen(msg);
+      const d = SCREEN_DWELL[msg.screen];
+      if(d) lockUntil = Math.max(lockUntil, Date.now() + d);
+    }
     function drainScreens(){
       drainTimer = null;
       const wait = lockUntil - Date.now();
       if(wait > 0){ drainTimer = setTimeout(drainScreens, wait + 30); return; }
       const m = screenQ.shift(); if(!m) return;
-      applyScreen(m);
+      applyScreenDwell(m);
       if(screenQ.length) drainTimer = setTimeout(drainScreens, screenQ.length > 2 ? 500 : 1200);
     }
     function renderScreen(msg){
       if(!msg || !msg.screen) return;
       const now = Date.now();
-      if(msg.screen==='taxi_drive' || msg.screen==='field_landed'){
-        // „Gelandet auf …“ bleibt ca. 3 s stehen, die Taxifahrt 4,6 s
-        lockUntil = now + (msg.screen==='taxi_drive' ? 4600 : 3200);
+      if(msg.screen==='taxi_drive' || msg.screen==='field_landed' || msg.screen==='joint_build'){
+        // „Gelandet auf …“ bleibt ca. 3 s stehen, die Taxifahrt 4,6 s, die Joint-Zeremonie 8 s
+        lockUntil = now + (msg.screen==='joint_build' ? 12500 : msg.screen==='taxi_drive' ? 4600 : 3200);
         screenQ = []; clearTimeout(drainTimer); drainTimer = null;
         applyScreen(msg);
         drainTimer = setTimeout(drainScreens, lockUntil - now + 50);
@@ -13105,7 +13330,7 @@ function waldfestSceneMarkup(){
         if(!drainTimer) drainTimer = setTimeout(drainScreens, Math.max(0, lockUntil - now) + 30);
         return;
       }
-      applyScreen(msg);
+      applyScreenDwell(msg);
     }
     // ---------- Auto-Anpassung: Inhalt wird per zoom so verkleinert, dass nichts aus dem Bild ragt ----------
     function fitBeamerContent(){
