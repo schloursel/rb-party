@@ -3020,7 +3020,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
     if(rauchspot){
       rChip.style.display='flex';
       const untilNext = 4 - ((state.round-1) % 4);
-      rChip.innerHTML = `🚬 Rauchspot: <b style="margin-left:4px;">${escapeHtml(rauchspot.name)}</b> <span style="color:var(--text-faint); font-weight:500; margin-left:4px;">(noch ${untilNext} Runde${untilNext===1?'':'n'}) · Joint hier nur ${jointCostFor(true)} Hash${roundPayoutMult()>1?' · 🔥 Doppelrunde':''}</span>`;
+      rChip.innerHTML = `🚬 Rauchspot: <b style="margin-left:4px;">${escapeHtml(rauchspot.name)}</b> <span style="color:var(--text-faint); font-weight:500; margin-left:4px;">(noch ${untilNext} Runde${untilNext===1?'':'n'}) · Joint hier ${(()=>{ const c = jointCostFor(true, currentPlayer()); return c===0 ? 'umsonst (Vape)' : 'nur '+c+' Hash'; })()}${roundPayoutMult()>1?' · 🔥 Doppelrunde':''}</span>`;
     } else { rChip.style.display='none'; }
 
     const pChip = document.getElementById('policeChip');
@@ -6508,7 +6508,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       // Beamer-Zeremonie (ca. 7 s); echter Betrag, Faktor/Ziel/Rangliste für die Anzeige
       const jm = state.mode && state.mode.type==='joints' ? state.mode.value : null;
       bcast('joint_build', {
-        player:{name:cp.name, color:cp.color}, ort:ort.name, cost:jointCost, n:cp.jointsBuilt, atRauchspot:!!isRauchspot,
+        player:{name:cp.name, color:cp.color, char:(cp.char && cp.char.cfg ? {id:cp.char.id, variantId:cp.char.variantId||null, bg:cp.char.bg||null, cfg:cp.char.cfg} : null)}, ort:ort.name, cost:jointCost, n:cp.jointsBuilt, atRauchspot:!!isRauchspot,
         factor:(hashFactor(cp)>1 ? hashFactor(cp) : 0), goal:jm,
         standings:[...state.players].sort((a,b)=>(b.jointsBuilt||0)-(a.jointsBuilt||0)).map(p=>({name:p.name, color:p.color, joints:p.jointsBuilt||0}))
       });
@@ -8854,7 +8854,9 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       @keyframes jbIn{ from{ opacity:0; transform:translate(-50%,-50%) translateY(-18vh) rotate(-50deg) scale(.3); } to{ opacity:1; transform:translate(-50%,-50%) rotate(0) scale(1); } }
       @keyframes jbMerge{ 0%{ opacity:1; left:var(--l); top:22%; transform:translate(-50%,-50%) scale(1); } 75%{ opacity:1; } 100%{ opacity:0; left:50%; top:66%; transform:translate(-50%,-50%) scale(.25); } }
       .jb-jsvg{ position:absolute; left:50%; top:60%; width:90%; transform:translate(-50%,-50%); overflow:visible; }
-      .jb-sheet{ transform-box:fill-box; transform-origin:50% 50%; opacity:0; animation:jbPaperIn .6s cubic-bezier(.3,1.4,.5,1) 1.6s both, jbRollUp 1.0s cubic-bezier(.5,0,.3,1) 2.8s forwards; }
+      .jb-sheet{ transform-box:fill-box; transform-origin:50% 50%; opacity:0; animation:jbPaperIn .6s cubic-bezier(.3,1.4,.5,1) 1.6s both, jbRollUp 1.0s cubic-bezier(.5,0,.3,1) 2.8s forwards, jbSheetOut .3s ease 3.5s forwards; }
+      @keyframes jbSheetOut{ to{ opacity:0; } }
+      .jb-cone{ opacity:0; animation:jbFade .35s ease 3.45s forwards; }
       @keyframes jbPaperIn{ from{ opacity:0; transform:translateY(-70px) rotate(-6deg) scale(.85); } to{ opacity:1; transform:none; } }
       @keyframes jbRollUp{ from{ transform:scaleY(1); } to{ transform:scaleY(.46); } }
       .jb-cyl{ opacity:0; animation:jbFade .8s ease 3.0s forwards; }
@@ -12790,22 +12792,29 @@ function waldfestSceneMarkup(){
       const crumbs = Array.from({length:22}, (_,i)=>`<circle class="jb-crumb2 jb-tobhide" style="--k:${i};" cx="${(230+i*20+Math.random()*10).toFixed(0)}" cy="${(104+Math.random()*12).toFixed(0)}" r="${(3+Math.random()*3).toFixed(1)}" fill="${i%3===0?'#5B7A2E':'#6B4A22'}"/>`).join('');
       const jointSvg = `<svg class="jb-jsvg" viewBox="0 0 800 220" aria-hidden="true">
         <defs>
-          <linearGradient id="jbCylG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/><stop offset=".78" stop-color="#7a6a44" stop-opacity=".22"/><stop offset="1" stop-color="#4a3c20" stop-opacity=".55"/></linearGradient>
-          <linearGradient id="jbFiltG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E7B77A"/><stop offset="1" stop-color="#A46E38"/></linearGradient>
+          <linearGradient id="jbBodyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFBEA"/><stop offset=".45" stop-color="#F3EAC9"/><stop offset="1" stop-color="#C9B98A"/></linearGradient>
+          <linearGradient id="jbTwG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#E6DAB2"/><stop offset="1" stop-color="#F8F1D6"/></linearGradient>
+          <linearGradient id="jbFiltG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F0D6A6"/><stop offset="1" stop-color="#B98A4E"/></linearGradient>
         </defs>
-        <ellipse class="jb-jshadow" cx="420" cy="150" rx="320" ry="14" fill="rgba(0,0,0,.4)"/>
+        <ellipse class="jb-jshadow" cx="440" cy="162" rx="330" ry="13" fill="rgba(0,0,0,.42)"/>
         <g class="jb-sheet">
-          <rect x="150" y="70" width="560" height="80" rx="6" fill="#F7F1DE" stroke="#CDBF98" stroke-width="3"/>
-          <rect x="150" y="70" width="560" height="14" rx="4" fill="#E9DDB4"/>
-          <path d="M190 110 H680 M190 122 H680" stroke="#E4D8B2" stroke-width="2"/>
-          <rect class="jb-cyl" x="150" y="70" width="560" height="80" rx="6" fill="url(#jbCylG)"/>
-          <path class="jb-cyl" d="M230 70 L246 150 M360 70 L372 150 M500 70 L510 150 M620 70 L632 150" stroke="rgba(120,100,60,.22)" stroke-width="2"/>
+          <rect x="185" y="70" width="475" height="80" rx="5" fill="#F7F1DE" stroke="#CDBF98" stroke-width="3"/>
+          <rect x="185" y="70" width="475" height="12" rx="4" fill="#EADFB8"/>
+          <rect x="185" y="138" width="475" height="10" rx="3" fill="#E2D6A8" opacity=".7"/>
+          <path d="M215 104 H640 M215 116 H640" stroke="#E4D8B2" stroke-width="2"/>
         </g>
         ${crumbs}
-        <g class="jb-filt"><rect x="62" y="91" width="106" height="38" rx="6" fill="url(#jbFiltG)" stroke="#7A5226" stroke-width="3"/><path d="M82 92 V128 M102 92 V128 M122 92 V128 M142 92 V128" stroke="#7A5226" stroke-width="2.4" opacity=".55"/></g>
-        <rect class="jb-lick" x="160" y="86" width="80" height="6" rx="3" fill="#fff"/>
-        <path class="jb-twist" d="M706 92 L752 104 Q760 110 752 116 L706 128 Q716 110 706 92Z" fill="#F0E6C4" stroke="#CDBF98" stroke-width="3" stroke-linejoin="round"/>
-        <circle cx="758" cy="110" r="5" fill="#4A6B2A" class="jb-twist"/>
+        <g class="jb-cone">
+          <path d="M188 97 C320 91 480 80 650 73 Q668 73 668 110 Q668 147 650 147 C480 140 320 129 188 123 Z" fill="url(#jbBodyG)" stroke="#BFB085" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M260 94 L270 126 M355 90 L366 128 M455 85 L468 134 M555 79 L568 142" stroke="rgba(140,120,70,.28)" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M200 121 C330 127 480 138 650 144" stroke="rgba(150,130,80,.45)" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <g fill="#6B4A22" opacity=".22"><circle cx="300" cy="108" r="3"/><circle cx="360" cy="112" r="2.6"/><circle cx="430" cy="104" r="3.2"/><circle cx="500" cy="112" r="3"/><circle cx="560" cy="106" r="3.4"/><circle cx="610" cy="114" r="3"/></g>
+          <path d="M650 73 C700 80 742 98 776 108 C742 118 700 140 650 147 C664 128 664 92 650 73Z" fill="url(#jbTwG)" stroke="#BFB085" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M668 84 C690 92 714 100 764 108 M668 136 C690 128 714 118 764 108 M664 110 H770" stroke="rgba(140,120,70,.4)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        </g>
+        <g class="jb-filt"><rect x="122" y="95" width="76" height="30" rx="7" fill="url(#jbFiltG)" stroke="#7A5226" stroke-width="3"/><ellipse cx="127" cy="110" rx="5" ry="13" fill="#5A3A1C"/><path d="M146 96 L138 124 M164 96 L156 124 M182 96 L174 124" stroke="#8A5E2E" stroke-width="2.2" opacity=".55"/></g>
+        <rect class="jb-lick" x="195" y="116" width="90" height="6" rx="3" fill="#fff"/>
+        <circle class="jb-twist" cx="776" cy="108" r="5" fill="#4A6B2A"/>
       </svg>`;
       const xpuffs = Array.from({length:14}, (_,i)=>`<i class="jb-xpuff" style="--d:${i}; --dx:${(40+Math.random()*110).toFixed(0)}%; --dy:${(-20-Math.random()*90).toFixed(0)}%; --s:${(4+Math.random()*3).toFixed(1)}; margin-left:${(Math.random()*4-2).toFixed(1)}%;"></i>`).join('');
       const tpuffs = Array.from({length:4}, (_,i)=>`<i class="jb-tpuff" style="--d:${i}; --dx:${(Math.random()*24-6).toFixed(0)}%;"></i>`).join('');
