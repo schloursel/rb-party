@@ -14074,6 +14074,7 @@ function waldfestSceneMarkup(){
     window.addEventListener('pageshow', hostWake);
     window.addEventListener('focus', hostWake);
     let inFrame = false; try{ inFrame = window.self !== window.top; }catch(e){ inFrame = true; }
+    if(/[?&]stage=1\b/.test(location.search)) inFrame = false; // Bühnen-Rahmen (Handy/iPad) ist ein echter Beamer, keine Vorschau
     if(/^https?:$/.test(location.protocol) && !inFrame) startHost(false); // Vorschau-Fenster im Pad (iframe) legt keinen Raum an
 
     let mgBeamerActivePrev = false;
@@ -14099,7 +14100,29 @@ function waldfestSceneMarkup(){
     const bl = document.getElementById('brandLogo');
     if(bl) bl.innerHTML = logoSVG('rb', {size:46, uid:'brand', animate:true});
   }catch(e){}
+  // Handy/iPad: Der Beamer ist für eine Bühne von mind. 1280×720 gebaut. Auf kleineren Touch-Bildschirmen läuft er deshalb in einem
+  // maßstäblich verkleinerten Rahmen (gleiche Seite, ?stage=1), damit nichts abgeschnitten wird. Laptops (Maus) bleiben unberührt.
+  function bmStageWrap(){
+    try{
+      if(/[?&]stage=1\b/.test(location.search) || window.self !== window.top) return false;
+      if(!/^https?:$/.test(location.protocol) || !matchMedia('(pointer: coarse)').matches) return false;
+      const kOf = ()=>Math.min(1, innerHeight/720, innerWidth/1280);
+      if(kOf() >= 0.995) return false;
+      const fr = document.createElement('iframe');
+      fr.id = 'bmStage'; fr.setAttribute('allow','autoplay; fullscreen; screen-wake-lock');
+      fr.src = location.pathname + location.search + '&stage=1' + location.hash;
+      fr.style.cssText = 'position:fixed; left:0; top:0; border:0; transform-origin:0 0; background:#04070b;';
+      document.documentElement.style.cssText += ';background:#04070b;overflow:hidden';
+      document.body.style.cssText += ';margin:0;background:#04070b;overflow:hidden';
+      document.body.innerHTML = '';
+      document.body.appendChild(fr);
+      const fit = ()=>{ const k = kOf(); fr.style.width = (innerWidth/k)+'px'; fr.style.height = (innerHeight/k)+'px'; fr.style.transform = k<0.995 ? 'scale('+k+')' : 'none'; };
+      fit(); window.addEventListener('resize', fit); window.addEventListener('orientationchange', ()=>setTimeout(fit,200));
+      return true;
+    }catch(e){ return false; }
+  }
   if(/[?&]beamer=1\b/.test(location.search)){
+    if(bmStageWrap()) return;
     initBeamerMode();
     // 2.3.80: Automatischer Sparmodus. Misst die Bildrate; ruckelt der Beamer dauerhaft, werden Weichzeichner, Schatten-Filter und
     // reine Deko-Animationen abgeschaltet. Der Modus wird gemerkt (Zurücksetzen: ?lite=0 an die Adresse hängen).
@@ -14166,6 +14189,7 @@ function waldfestSceneMarkup(){
       document.body.appendChild(chip);
       const L = window.__bmLink;
       let framed = false; try{ framed = window.self !== window.top; }catch(e){ framed = true; }
+      if(/[?&]stage=1\b/.test(location.search)) framed = false;
       const upd = ()=>{
         if(framed){ chip.style.display = 'none'; return; }
         if(!L || !L.code){ chip.style.display = /^https?:$/.test(location.protocol) ? 'flex' : 'none'; chip.className = ''; chip.innerHTML = '<span class="bml-lbl">Pad-Code</span><b>····</b>' + (L && L.err ? '<span class="bml-lbl">Fehler: ' + L.err + '</span>' : ''); return; }
@@ -14490,7 +14514,7 @@ function waldfestSceneMarkup(){
 (function(){
   'use strict';
   if(!document.getElementById('app')) return; // Beamer-Modus ersetzt den Body – dann nichts tun
-  var VERSION = 'rbparty-v2.3.137'; // gleich halten mit sw.js
+  var VERSION = 'rbparty-v2.3.138'; // gleich halten mit sw.js
   var QKEY='rbparty_feedback_queue', FKEY='rbparty_fb_fab', TKEY='rbparty_fb_times', NKEY='rbparty_fb_name';
   var KATS=[['fehler','🐞','Fehler'],['unklar','😕','Unklar'],['idee','💡','Idee'],['inhalt','⚖️','Inhalt / Balance'],['lob','👍','Lob']];
   var PRIOS=[['blockiert','⛔','Blockiert'],['nervt','😤','Nervt'],['klein','🤏','Kleinigkeit']];
@@ -14512,6 +14536,7 @@ function waldfestSceneMarkup(){
   st.textContent =
   '#rbfb-fab{position:fixed;right:12px;bottom:12px;z-index:99000;width:42px;height:42px;padding:0;border-radius:50%;border:1px solid var(--sep-strong,rgba(0,0,0,.18));background:var(--surface,#fff);color:var(--text,#111);font-size:20px;line-height:1;opacity:.5;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.22)}'+
   '#rbfb-fab:hover,#rbfb-fab:focus{opacity:1}'+
+  '@media (pointer:coarse) and (max-width:780px){#rbfb-fab{bottom:calc(78px + env(safe-area-inset-bottom,0px))}}'+
   '#rbfb-pick{position:fixed;inset:0;z-index:99100;cursor:crosshair;background:rgba(0,0,0,.06)}'+
   '#rbfb-box{position:fixed;z-index:99110;pointer-events:none;border:3px solid #ff3b30;background:rgba(255,59,48,.12);border-radius:6px;display:none}'+
   '#rbfb-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:99120;max-width:calc(100vw - 24px);display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--surface,#fff);color:var(--text,#111);border:1px solid var(--sep-strong,rgba(0,0,0,.18));border-radius:16px;padding:10px 12px;box-shadow:0 12px 40px rgba(0,0,0,.35);font:15px/1.3 system-ui,sans-serif}'+
@@ -14743,6 +14768,33 @@ function waldfestSceneMarkup(){
       toast('Datei gespeichert – schick sie gern weiter.');
     }catch(err){ toast('Speichern als Datei hat nicht geklappt.'); }
   }
+})();
+</script>
+<script>
+// ---------- Ausrichtung auf Handy/iPad: Pad hochkant, Beamer quer ----------
+(function(){
+  try{
+    if(window.self !== window.top) return; // Vorschau- und Bühnen-Rahmen nicht
+    if(!matchMedia('(pointer: coarse)').matches) return; // Laptops/Maus: nichts ändern
+    if(Math.min(screen.width, screen.height) > 1100) return; // nur Handys und Tablets
+    var beamer = /[?&]beamer=1\b/.test(location.search), want = beamer ? 'landscape' : 'portrait';
+    var css = document.createElement('style');
+    css.textContent = '#rbOrient{position:fixed;inset:0;z-index:2147483000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;box-sizing:border-box;text-align:center;background:#0E1C11;color:#F3E8C8;font:600 20px/1.35 system-ui,sans-serif}'+
+      '#rbOrient.on{display:flex}#rbOrient .ph{width:54px;height:92px;border:4px solid #D4AF37;border-radius:12px;box-sizing:border-box;animation:rbTurn 2.4s ease-in-out infinite}'+
+      '#rbOrient small{display:block;font-weight:400;font-size:15px;opacity:.75;margin-top:6px}#rbOrient button{min-height:44px;padding:8px 20px;border-radius:999px;border:1px solid rgba(212,175,55,.6);background:transparent;color:#E8CE6B;font:inherit;font-size:16px}'+
+      '@keyframes rbTurn{0%,15%{transform:rotate(0)}55%,100%{transform:rotate('+(beamer?'-90':'90')+'deg)}}';
+    document.head.appendChild(css);
+    var ov = document.createElement('div'); ov.id = 'rbOrient'; ov.setAttribute('role','alert');
+    ov.innerHTML = '<div class="ph"></div><div>'+(beamer ? 'Bitte das Gerät quer halten<small>Der Beamer ist für das Querformat gemacht.</small>' : 'Bitte das Gerät hochkant halten<small>Das Pad ist für das Hochformat gemacht.</small>')+'</div><button type="button">Trotzdem weiter</button>';
+    document.documentElement.appendChild(ov); // nicht in body: der Beamer ersetzt den body-Inhalt
+    var skipped = false, last = '';
+    function cur(){ return innerWidth > innerHeight ? 'landscape' : 'portrait'; }
+    function upd(){ var c = cur(); if(c !== last){ last = c; skipped = false; } ov.classList.toggle('on', c !== want && !skipped); }
+    ov.querySelector('button').addEventListener('click', function(){ skipped = true; upd(); });
+    window.addEventListener('resize', upd); window.addEventListener('orientationchange', function(){ setTimeout(upd, 150); });
+    upd();
+    try{ var l = screen.orientation && screen.orientation.lock && screen.orientation.lock(want); if(l && l.catch) l.catch(function(){}); }catch(e){}
+  }catch(e){}
 })();
 </script></body>
 </html>
