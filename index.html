@@ -14490,7 +14490,7 @@ function waldfestSceneMarkup(){
 (function(){
   'use strict';
   if(!document.getElementById('app')) return; // Beamer-Modus ersetzt den Body – dann nichts tun
-  var VERSION = 'rbparty-v2.3.135'; // gleich halten mit sw.js
+  var VERSION = 'rbparty-v2.3.136'; // gleich halten mit sw.js
   var QKEY='rbparty_feedback_queue', FKEY='rbparty_fb_fab', TKEY='rbparty_fb_times', NKEY='rbparty_fb_name';
   var KATS=[['fehler','🐞','Fehler'],['unklar','😕','Unklar'],['idee','💡','Idee'],['inhalt','⚖️','Inhalt / Balance'],['lob','👍','Lob']];
   var PRIOS=[['blockiert','⛔','Blockiert'],['nervt','😤','Nervt'],['klein','🤏','Kleinigkeit']];
@@ -14529,7 +14529,6 @@ function waldfestSceneMarkup(){
   '#rbfb-sheet .rbfb-chip.on{background:var(--accent,#3D8B44);color:#fff;border-color:transparent;font-weight:700}'+
   '#rbfb-sheet textarea,#rbfb-sheet input[type=text]{width:100%;box-sizing:border-box;border:1px solid var(--sep-strong,rgba(0,0,0,.25));border-radius:12px;background:var(--bg,#fff);color:inherit;font:inherit;font-size:16px;padding:10px}'+
   '#rbfb-sheet textarea{min-height:84px;resize:vertical}'+
-  '#rbfb-sheet img.rbfb-shot{max-width:100%;max-height:150px;border-radius:10px;border:1px solid var(--sep-strong,rgba(0,0,0,.2));display:block}'+
   '#rbfb-sheet details{margin:8px 0}#rbfb-sheet summary{cursor:pointer;font-weight:600}'+
   '#rbfb-sheet label.rbfb-l{display:block;margin:8px 0 3px;font-size:13px;color:var(--text-soft,#666)}'+
   '#rbfb-sheet .rbfb-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}'+
@@ -14587,42 +14586,14 @@ function waldfestSceneMarkup(){
       fehler:errs.slice()};
   }
 
-  // ---- Screenshot ----
-  var h2cLoading=false;
-  function loadH2C(){
-    if(window.html2canvas || h2cLoading) return; h2cLoading=true;
-    var s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; s.onerror=function(){ h2cLoading=false; }; document.head.appendChild(s);
-  }
-  function encode(cv){
-    var steps=[[1000,.6],[800,.5],[600,.45]], out=null;
-    for(var i=0;i<steps.length;i++){
-      var c=cv; if(cv.width>steps[i][0]){ c=document.createElement('canvas'); c.width=steps[i][0]; c.height=Math.round(cv.height*steps[i][0]/cv.width); c.getContext('2d').drawImage(cv,0,0,c.width,c.height); }
-      out=c.toDataURL('image/jpeg',steps[i][1]); if(out.length<=200000) break;
-    }
-    return out;
-  }
-  function shoot(rect){
-    if(!window.html2canvas) return Promise.resolve(null);
-    var w=innerWidth,h=innerHeight,sc=Math.min(1,1000/w), bg=getComputedStyle(document.body).backgroundColor; if(!bg||/rgba\(0, 0, 0, 0\)/.test(bg)) bg='#ffffff';
-    return Promise.race([
-      window.html2canvas(document.documentElement,{scale:sc,x:window.scrollX,y:window.scrollY,width:w,height:h,windowWidth:w,windowHeight:h,logging:false,useCORS:true,backgroundColor:bg,ignoreElements:function(n){ return !!(n.id && n.id.indexOf('rbfb')===0); },
-        // html2canvas 1.4.1 scheitert bei text-transform/letter-spacing an der Textmessung ("setEnd … offset"); im Klon abschalten
-        onclone:function(d){ var s=d.createElement('style'); s.textContent='*{text-transform:none !important;letter-spacing:normal !important;}'; d.head.appendChild(s); }}),
-      new Promise(function(_,rej){ setTimeout(rej, 9000); })
-    ]).then(function(cv){
-      if(rect){ var g=cv.getContext('2d'); g.lineWidth=Math.max(2,4*sc); g.strokeStyle='#ff3b30'; g.strokeRect(rect.left*sc,rect.top*sc,rect.width*sc,rect.height*sc); }
-      return encode(cv);
-    }).catch(function(){ return null; });
-  }
-
   // ---- Schritt 1: Element markieren ----
+  // Bewusst ohne Screenshot: Selektor, Text und Bereich des Elements sowie der Spielzustand reichen, um die Stelle zu finden.
   function start(o){
     if(busy) return; busy=true; applyFab();
     var base=baseCtx();
-    loadH2C();
-    if(o.card){ shootAndSheet({card:true, base:base, el:null, rect:null}); return; } // Karte melden: kein Markieren nötig, Inhalt steckt im Kontext
-    var ov=mk('div','rbfb-pick'), box=mk('div','rbfb-box'), bar=mk('div','rbfb-bar'), cur=null;
-    bar.innerHTML='<span class="rbfb-hint">Tippe auf das, was du meinst</span>'+
+    if(o.card){ openSheet({card:true, base:base, el:null}); return; } // Karte melden: kein Markieren nötig, Inhalt steckt im Kontext
+    var ov=mk('div','rbfb-pick'), box=mk('div','rbfb-box'), bar=mk('div','rbfb-bar'), cur=null, locked=false;
+    bar.innerHTML='<span class="rbfb-hint">Klicke oder tippe auf das, was du meinst</span>'+
       '<button type="button" class="rbfb-btn" data-a="up" disabled>↑ Größer</button>'+
       '<button type="button" class="rbfb-btn pri" data-a="ok" disabled>✓ Das meine ich</button>'+
       '<button type="button" class="rbfb-btn" data-a="all">Ganze Seite</button>'+
@@ -14639,28 +14610,21 @@ function waldfestSceneMarkup(){
     function end(){ ov.remove(); box.remove(); bar.remove(); document.removeEventListener('keydown',onKey,true); }
     function onKey(e){ if(e.key==='Escape'){ e.stopPropagation(); end(); busy=false; applyFab(); } }
     document.addEventListener('keydown',onKey,true);
-    ov.addEventListener('pointermove', function(e){ if(e.pointerType==='mouse'){ var t=at(e.clientX,e.clientY); if(t){ cur=t; paint(); } } });
-    ov.addEventListener('click', function(e){ e.preventDefault(); var t=at(e.clientX,e.clientY); if(t){ cur=t; paint(); } });
+    // Maus: Die Markierung folgt der Maus nur bis zum ersten Linksklick. Danach bleibt sie stehen, damit man zu den Knöpfen fahren kann.
+    ov.addEventListener('pointermove', function(e){ if(e.pointerType==='mouse' && !locked){ var t=at(e.clientX,e.clientY); if(t){ cur=t; paint(); } } });
+    ov.addEventListener('click', function(e){
+      e.preventDefault(); var t=at(e.clientX,e.clientY);
+      if(t){ cur=t; locked=true; paint(); bar.querySelector('.rbfb-hint').textContent='Passt? Sonst klicke ein anderes Element an.'; }
+    });
     bar.addEventListener('click', function(e){
       var a=e.target.getAttribute && e.target.getAttribute('data-a'); if(!a) return;
-      if(a==='up'){ if(cur && cur.parentElement && cur.parentElement!==document.body && cur.parentElement!==document.documentElement){ cur=cur.parentElement; paint(); } }
+      if(a==='up'){ if(cur && cur.parentElement && cur.parentElement!==document.body && cur.parentElement!==document.documentElement){ cur=cur.parentElement; locked=true; paint(); } }
       else if(a==='x'){ end(); busy=false; applyFab(); }
-      else { var target = a==='ok' ? cur : null; var rect = target ? target.getBoundingClientRect() : null; var d = target ? describe(target) : null; end(); shootAndSheet({card:false, base:base, el:d, rect:rect}); }
+      else { var d = (a==='ok' && cur) ? describe(cur) : null; end(); openSheet({card:false, base:base, el:d}); }
     });
   }
 
-  // ---- Schritt 2: Screenshot, dann Formular ----
-  function shootAndSheet(o){
-    // zwei Frames warten, damit die Markierungsfläche sicher weg ist (sie wird ohnehin ignoriert)
-    // Das Formular öffnet sofort, der Screenshot (kann auf großen Seiten einige Sekunden dauern) wird nachgeladen.
-    o.shot=''; o.shotDone=false;
-    o.shotP = new Promise(function(res){ setTimeout(function(){
-      shoot(o.rect).then(function(s){ o.shot=s||''; }, function(){ o.shot=''; }).then(function(){ o.shotDone=true; res(); });
-    }, 60); });
-    openSheet(o);
-  }
-
-  // ---- Schritt 3: Formular ----
+  // ---- Schritt 2: Formular ----
   function openSheet(o){
     var form={kat:'', prio:'', grund:''};
     var wrap=mk('div','rbfb-wrap'), sh=mk('div','rbfb-sheet'); sh.setAttribute('role','dialog'); sh.setAttribute('aria-modal','true');
@@ -14668,7 +14632,6 @@ function waldfestSceneMarkup(){
     sh.innerHTML =
       '<div class="rbfb-row"><h3>'+(o.card?'⚑ Karte melden':'💬 Feedback')+'</h3><button type="button" class="rbfb-btn" data-a="x" aria-label="Schließen">✕</button></div>'+
       '<div id="rbfb-ctxline" class="rbfb-sub"></div>'+
-      '<div id="rbfb-shotbox" class="rbfb-sub">📷 Screenshot wird erstellt …</div>'+
       (o.card ? '<div class="rbfb-sub" style="margin-top:10px">Was stimmt nicht?</div>'+chips(GRUENDE,'grund') : '<div class="rbfb-sub" style="margin-top:10px">Worum geht es?</div>'+chips(KATS,'kat')+'<div class="rbfb-sub">Wie sehr stört es?</div>'+chips(PRIOS,'prio'))+
       '<textarea id="rbfb-text" maxlength="2000" placeholder="'+(o.card?'Kurz dazu (optional) …':'Was ist passiert oder was fällt dir ein? …')+'"></textarea>'+
       '<details><summary>Mehr Details (optional)</summary>'+
@@ -14677,20 +14640,14 @@ function waldfestSceneMarkup(){
         '<label class="rbfb-l" for="rbfb-name">Dein Name / Kürzel (damit ich nachfragen kann)</label><input type="text" id="rbfb-name" maxlength="40" autocomplete="off">'+
       '</details>'+
       '<input type="text" class="rbfb-hp" id="rbfb-hp" tabindex="-1" autocomplete="off" aria-hidden="true">'+
-      '<div class="rbfb-sub">Mitgesendet werden: Screenshot, markiertes Element, Ansicht, Runde/Spielphase, Gerät und Appversion – keine Spielernamen.</div>'+
+      '<div class="rbfb-sub">Mitgesendet werden: markiertes Element, Ansicht, Runde/Spielphase, Gerät und Appversion – keine Spielernamen.</div>'+
       '<div class="rbfb-row" style="margin:6px 0 0"><button type="button" class="rbfb-btn" data-a="file">Als Datei speichern</button><button type="button" class="rbfb-btn pri" data-a="send">Senden</button></div>';
     wrap.appendChild(sh); document.body.appendChild(wrap);
     var line=sh.querySelector('#rbfb-ctxline');
     if(o.card){ var k=''; try{ k=(o.base.spiel.minispiel&&o.base.spiel.minispiel.karte)||''; }catch(e){} line.textContent='Karte: '+k.slice(0,200); }
     else line.textContent = o.el ? ('Markiert: '+(o.el.text||o.el.aria||o.el.title||o.el.selector).slice(0,80)) : 'Ganze Seite (nichts Bestimmtes markiert)';
-    o.shotP.then(function(){
-      var bx=sh.querySelector('#rbfb-shotbox'); if(!bx) return;
-      if(o.shot){ var im=document.createElement('img'); im.className='rbfb-shot'; im.alt='Screenshot der markierten Stelle'; im.src=o.shot; bx.replaceWith(im); }
-      else bx.textContent='Kein Screenshot möglich – Text und Kontext werden trotzdem gesendet.';
-    });
     var nm=sh.querySelector('#rbfb-name'); nm.value=ls(NKEY)||'';
-    var closed=false;
-    function close(){ closed=true; document.removeEventListener('keydown',onKey,true); wrap.remove(); busy=false; applyFab(); }
+    function close(){ document.removeEventListener('keydown',onKey,true); wrap.remove(); busy=false; applyFab(); }
     function onKey(e){ if(e.key==='Escape'){ e.stopPropagation(); close(); } }
     document.addEventListener('keydown',onKey,true);
     wrap.addEventListener('click', function(e){ if(e.target===wrap) close(); });
@@ -14709,10 +14666,9 @@ function waldfestSceneMarkup(){
       var ctx=o.base; ctx.element=o.el||null;
       return {ts:Date.now(), zeit:new Date().toISOString(), typ:o.card?'karte':'allgemein', kat:o.card?'inhalt':form.kat, prio:form.prio, grund:form.grund,
         text:text.slice(0,2000), name:name, erwartet:sh.querySelector('#rbfb-erw').value.trim().slice(0,400), passiert:sh.querySelector('#rbfb-pas').value.trim().slice(0,400),
-        status:'neu', ctx:ctx, shot:o.shot||''};
+        status:'neu', ctx:ctx};
     }
     function submit(asFile){
-      if(!o.shotDone){ toast('Einen Moment, der Screenshot wird noch erstellt …'); o.shotP.then(function(){ if(!closed) submit(asFile); }); return; }
       var e=build();
       if(!e.kat && !e.text && !e.grund){ toast(o.card?'Bitte wähle einen Grund aus.':'Bitte wähle eine Kategorie oder schreibe kurz etwas.'); return; }
       if(asFile){ saveFile(e); return; }
@@ -14729,7 +14685,7 @@ function waldfestSceneMarkup(){
 
   // ---- Warteschlange und Versand ----
   function qGet(){ try{ return JSON.parse(ls(QKEY)||'[]')||[]; }catch(e){ return []; } }
-  function qSet(q){ if(!lsSet(QKEY, JSON.stringify(q))){ q.forEach(function(x){ x.shot=''; }); lsSet(QKEY, JSON.stringify(q)); } }
+  function qSet(q){ lsSet(QKEY, JSON.stringify(q)); }
   function post(e){
     var b=ctxApp().fbBase; if(!b) return Promise.reject(new Error('nobase'));
     return fetch(b+'/rb/feedback.json',{method:'POST',body:JSON.stringify(e)}).then(function(r){ if(!r.ok) throw new Error('http'+r.status); });

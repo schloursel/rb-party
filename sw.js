@@ -1,6 +1,6 @@
 // RB-Party Service Worker â€“ macht die App offline startbar.
 // Bei jeder neuen Version der App VERSION erhÃ¶hen, damit alte Dateien ersetzt werden.
-const VERSION = 'rbparty-v2.3.135';
+const VERSION = 'rbparty-v2.3.136';
 const APP_FILES = [
   './',
   'index.html',
@@ -38,7 +38,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(req.url);
 
   // Schriften von Google und PeerJS-Baustein (Kopplung): einmal laden, danach aus dem Cache (im Hintergrund aktualisieren)
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com' || url.hostname === 'unpkg.com' || url.hostname === 'cdnjs.cloudflare.com') {
+  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com' || url.hostname === 'unpkg.com') {
     event.respondWith(
       caches.open(VERSION).then(cache =>
         cache.match(req).then(hit => {
