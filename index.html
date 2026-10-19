@@ -14100,14 +14100,14 @@ function waldfestSceneMarkup(){
     const bl = document.getElementById('brandLogo');
     if(bl) bl.innerHTML = logoSVG('rb', {size:46, uid:'brand', animate:true});
   }catch(e){}
-  // Handy/iPad: Der Beamer ist für eine Bühne von mind. 1280×720 gebaut. Auf kleineren Touch-Bildschirmen läuft er deshalb in einem
+  // Handy/iPad: Der Beamer ist für eine Bühne von 1920×1080 gebaut. Auf kleineren Touch-Bildschirmen läuft er deshalb in einem
   // maßstäblich verkleinerten Rahmen (gleiche Seite, ?stage=1), damit nichts abgeschnitten wird. Laptops (Maus) bleiben unberührt.
   function bmStageWrap(){
     try{
       if(/[?&]stage=1\b/.test(location.search) || window.self !== window.top) return false;
       if(!/^https?:$/.test(location.protocol) || !matchMedia('(pointer: coarse)').matches) return false;
-      // Bühne: mindestens 1280×720. Breiter als 16:9 (Handy quer) wird sie seitlich länger, schmaler als 16:9 (iPad) bleibt sie 1280×720 mit Rändern.
-      const geo = ()=>{ const a = innerWidth/innerHeight, sh = 720, sw = a>=16/9 ? sh*a : 1280, k = Math.min(innerWidth/sw, innerHeight/sh); return {sw:sw, sh:sh, k:k}; };
+      // Bühne: Full-HD (1920×1080), dafür sind die festen Schriftgrößen des Beamers gebaut. Breiter als 16:9 (Handy quer) wird sie seitlich länger, schmaler als 16:9 (iPad) bleibt sie 1920×1080 mit Rändern.
+      const geo = ()=>{ const a = innerWidth/innerHeight, sh = 1080, sw = a>=16/9 ? sh*a : 1920, k = Math.min(innerWidth/sw, innerHeight/sh); return {sw:sw, sh:sh, k:k}; };
       if(geo().k >= 0.995) return false;
       const fr = document.createElement('iframe');
       fr.id = 'bmStage'; fr.setAttribute('allow','autoplay; fullscreen; screen-wake-lock');
@@ -14520,7 +14520,7 @@ function waldfestSceneMarkup(){
 (function(){
   'use strict';
   if(!document.getElementById('app')) return; // Beamer-Modus ersetzt den Body – dann nichts tun
-  var VERSION = 'rbparty-v2.3.139'; // gleich halten mit sw.js
+  var VERSION = 'rbparty-v2.3.140'; // gleich halten mit sw.js
   var QKEY='rbparty_feedback_queue', FKEY='rbparty_fb_fab', TKEY='rbparty_fb_times', NKEY='rbparty_fb_name';
   var KATS=[['fehler','🐞','Fehler'],['unklar','😕','Unklar'],['idee','💡','Idee'],['inhalt','⚖️','Inhalt / Balance'],['lob','👍','Lob']];
   var PRIOS=[['blockiert','⛔','Blockiert'],['nervt','😤','Nervt'],['klein','🤏','Kleinigkeit']];
