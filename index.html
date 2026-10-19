@@ -14558,7 +14558,7 @@ function waldfestSceneMarkup(){
 (function(){
   'use strict';
   if(!document.getElementById('app')) return; // Beamer-Modus ersetzt den Body – dann nichts tun
-  var VERSION = 'rbparty-v2.3.142'; // gleich halten mit sw.js
+  var VERSION = 'rbparty-v2.3.143'; // gleich halten mit sw.js
   var QKEY='rbparty_feedback_queue', FKEY='rbparty_fb_fab', TKEY='rbparty_fb_times', NKEY='rbparty_fb_name';
   var KATS=[['fehler','🐞','Fehler'],['unklar','😕','Unklar'],['idee','💡','Idee'],['inhalt','⚖️','Inhalt / Balance'],['lob','👍','Lob']];
   var PRIOS=[['blockiert','⛔','Blockiert'],['nervt','😤','Nervt'],['klein','🤏','Kleinigkeit']];
@@ -14678,16 +14678,28 @@ function waldfestSceneMarkup(){
       up.disabled = ok.disabled = !cur;
       if(!cur){ box.style.display='none'; return; }
       var r=cur.getBoundingClientRect(), L=r.left, T=r.top, W=r.width, H=r.height;
-      if(cur.ownerDocument!==document){ var f=bmFrame(); if(!f){ box.style.display='none'; return; } var fr=f.getBoundingClientRect(), k=fr.width/1280; L=fr.left+L*k; T=fr.top+T*k; W*=k; H*=k; }
+      if(cur.ownerDocument!==document){ var f=bmFrame(); if(!f){ box.style.display='none'; return; } var fr=f.getBoundingClientRect(), k=fr.width/1920; L=fr.left+L*k; T=fr.top+T*k; W*=k; H*=k; }
       box.style.display='block'; box.style.left=L+'px'; box.style.top=T+'px'; box.style.width=W+'px'; box.style.height=H+'px';
     }
-    function bmFrame(){ var f=document.getElementById('beamerPreviewFrame'), p=document.getElementById('beamerPreviewPanel'); return (f && p && p.style.display!=='none') ? f : null; }
+    // Eigene, große Beamer-Ansicht (Full-HD-Bühne, verkleinert) – unabhängig davon, ob die Vorschau im Pad offen ist
+    var view=null, vfr=null;
+    function bmFrame(){ return vfr; }
+    function scaleView(){ if(view&&vfr) vfr.style.transform='scale('+(view.clientWidth/1920)+')'; }
+    function showView(){
+      if(view) return;
+      view=mk('div','rbfb-bmview'); view.style.cssText='position:fixed;z-index:99105;pointer-events:none;left:50%;top:14px;transform:translateX(-50%);aspect-ratio:16/9;width:min(96vw,calc((100vh - 150px)*16/9));background:#000;overflow:hidden;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.55)';
+      vfr=document.createElement('iframe'); vfr.title='Beamer-Ansicht'; vfr.src=location.pathname+'?beamer=1&fb=1';
+      vfr.style.cssText='position:absolute;left:0;top:0;width:1920px;height:1080px;border:0;transform-origin:0 0;pointer-events:none';
+      view.appendChild(vfr); document.body.insertBefore(view, ov); scaleView(); ov.style.background='rgba(0,0,0,.72)';
+    }
+    function hideView(){ if(view){ view.remove(); view=null; vfr=null; } ov.style.background=''; }
+    window.addEventListener('resize', scaleView);
     function ok(e,d){ return (e && e!==d.documentElement && e!==d.body) ? e : null; }
     function at(x,y){
       if(screen==='beamer'){
         var f=bmFrame(); if(!f) return null;
         var fr=f.getBoundingClientRect(); if(x<fr.left||x>fr.right||y<fr.top||y>fr.bottom) return null;
-        try{ var k=fr.width/1280; return ok(f.contentDocument.elementFromPoint((x-fr.left)/k,(y-fr.top)/k), f.contentDocument); }catch(e){ return null; }
+        try{ var k=fr.width/1920; return ok(f.contentDocument.elementFromPoint((x-fr.left)/k,(y-fr.top)/k), f.contentDocument); }catch(e){ return null; }
       }
       ov.style.pointerEvents='none'; var e=document.elementFromPoint(x,y); ov.style.pointerEvents=''; return ok(e,document);
     }
@@ -14696,12 +14708,10 @@ function waldfestSceneMarkup(){
       bar.querySelector('[data-a=sc-pad]').classList.toggle('pri', s==='pad');
       bar.querySelector('[data-a=sc-bm]').classList.toggle('pri', s==='beamer');
       var hint=bar.querySelector('.rbfb-hint');
-      if(s==='beamer'){
-        if(!bmFrame()){ var tb=document.getElementById('beamerPreviewToggle'); if(tb) tb.click(); }
-        hint.textContent = bmFrame() ? 'Beamer: Klicke auf das, was du meinst' : 'Beamer-Vorschau nicht verfügbar – „Ganzer Bildschirm“ wählen';
-      } else hint.textContent='Klicke oder tippe auf das, was du meinst';
+      if(s==='beamer'){ showView(); hint.textContent='Beamer: Klicke oder tippe auf das, was du meinst'; }
+      else { hideView(); hint.textContent='Klicke oder tippe auf das, was du meinst'; }
     }
-    function end(){ ov.remove(); box.remove(); bar.remove(); document.removeEventListener('keydown',onKey,true); }
+    function end(){ hideView(); window.removeEventListener('resize', scaleView); ov.remove(); box.remove(); bar.remove(); document.removeEventListener('keydown',onKey,true); }
     function onKey(e){ if(e.key==='Escape'){ e.stopPropagation(); end(); busy=false; applyFab(); } }
     document.addEventListener('keydown',onKey,true);
     // Maus: Die Markierung folgt der Maus nur bis zum ersten Linksklick. Danach bleibt sie stehen, damit man zu den Knöpfen fahren kann.
