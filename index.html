@@ -958,6 +958,35 @@
     #flowPanel > .flow-steps ~ *, #app .menu-pop, #tipBubble, #app .live-chip::before{ animation:none !important; }
   }
 </style>
+<script>
+// ---------- Startauswahl: Gamepad oder Beamer (vor allem anderen) ----------
+(function(){
+  try{
+    if(/[?&](beamer|stage|modus)=/.test(location.search) || window.self !== window.top) return;
+    try{ if(sessionStorage.getItem('rbparty_modus')) return; }catch(e){}
+    var css = document.createElement('style');
+    css.textContent = '#rbModus{position:fixed;inset:0;z-index:2147483200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:max(20px,env(safe-area-inset-top)) 20px max(20px,env(safe-area-inset-bottom));box-sizing:border-box;overflow:auto;background:radial-gradient(ellipse at 50% -10%,rgba(212,175,55,.16),transparent 60%),#0E1C11;color:#F3E8C8;font-family:Oswald,"Arial Narrow",system-ui,sans-serif;text-align:center}'+
+      '#rbModus h1{margin:0;font-size:clamp(26px,5vw,44px);letter-spacing:.06em;text-transform:uppercase;color:#E8CE6B}'+
+      '#rbModus p{margin:0;font-size:clamp(15px,2.4vw,20px);opacity:.8}'+
+      '#rbModus .rbm-row{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;width:100%;max-width:760px}'+
+      '#rbModus button{flex:1 1 280px;min-height:150px;padding:20px 18px;border-radius:22px;border:1.5px solid rgba(212,175,55,.55);background:rgba(29,51,34,.85);color:inherit;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}'+
+      '#rbModus button:active,#rbModus button:focus-visible{background:rgba(212,175,55,.22);outline:none;border-color:#E8CE6B}'+
+      '#rbModus button b{font-size:clamp(24px,4.4vw,34px);letter-spacing:.05em;text-transform:uppercase;color:#E8CE6B}#rbModus button span{font-size:clamp(14px,2.2vw,17px);opacity:.8;font-weight:300}#rbModus button i{font-style:normal;font-size:44px;line-height:1}';
+    document.head.appendChild(css);
+    var ov = document.createElement('div'); ov.id = 'rbModus'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true'); ov.setAttribute('aria-label','Gamepad oder Beamer wählen');
+    ov.innerHTML = '<h1>RB-Party</h1><p>Wofür nutzt du dieses Gerät?</p><div class="rbm-row">'+
+      '<button type="button" data-m="pad"><i>🎮</i><b>Gamepad</b><span>Spiel steuern und Würfel eintragen</span></button>'+
+      '<button type="button" data-m="beamer"><i>📺</i><b>Beamer</b><span>Anzeige für Fernseher oder Beamer</span></button></div>';
+    ov.addEventListener('click', function(e){
+      var b = e.target.closest && e.target.closest('button[data-m]'); if(!b) return;
+      try{ sessionStorage.setItem('rbparty_modus', b.getAttribute('data-m')); }catch(_){}
+      if(b.getAttribute('data-m') === 'beamer'){ location.href = location.pathname + '?beamer=1' + location.hash; }
+      else { ov.remove(); }
+    });
+    document.documentElement.appendChild(ov);
+  }catch(e){}
+})();
+</script>
 </head>
 <body>
 <div id="app">
@@ -14520,7 +14549,7 @@ function waldfestSceneMarkup(){
 (function(){
   'use strict';
   if(!document.getElementById('app')) return; // Beamer-Modus ersetzt den Body – dann nichts tun
-  var VERSION = 'rbparty-v2.3.140'; // gleich halten mit sw.js
+  var VERSION = 'rbparty-v2.3.141'; // gleich halten mit sw.js
   var QKEY='rbparty_feedback_queue', FKEY='rbparty_fb_fab', TKEY='rbparty_fb_times', NKEY='rbparty_fb_name';
   var KATS=[['fehler','🐞','Fehler'],['unklar','😕','Unklar'],['idee','💡','Idee'],['inhalt','⚖️','Inhalt / Balance'],['lob','👍','Lob']];
   var PRIOS=[['blockiert','⛔','Blockiert'],['nervt','😤','Nervt'],['klein','🤏','Kleinigkeit']];
