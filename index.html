@@ -9833,6 +9833,38 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
 
     const root = document.getElementById('beamerRoot');
 
+    // ---------- Automatische Anpassung: Passt ein Bildschirm nicht ins Bild (viele Spieler, große Karten, kleines Display), wird er verkleinert ----------
+    (function(){
+      let busy = false, pending = false;
+      function fitNow(){
+        busy = true;
+        try{
+          root.style.transform = ''; root.style.width = ''; root.style.minHeight = ''; root.style.transformOrigin = '';
+          const vh = innerHeight, vw = innerWidth;
+          let H = root.scrollHeight, W = root.scrollWidth;
+          if(H <= vh + 4 && W <= vw + 4) return; // passt – nichts ändern
+          let k = Math.min(vh/H, vw/W, 1);
+          for(let i=0;i<5;i++){
+            k = Math.max(0.4, k);
+            root.style.transformOrigin = '0 0';
+            root.style.width = (vw/k)+'px'; root.style.minHeight = (vh/k)+'px'; root.style.transform = 'scale('+k+')';
+            const H2 = root.scrollHeight, W2 = root.scrollWidth, Vh = vh/k, Vw = vw/k;
+            if(H2 <= Vh + 2 && W2 <= Vw + 2) break;
+            k = k * Math.min(Vh/H2, Vw/W2) * 0.995;
+          }
+        }catch(e){} finally { busy = false; }
+      }
+      function schedule(){
+        if(busy || pending) return; pending = true;
+        requestAnimationFrame(()=>{ pending = false; fitNow(); });
+      }
+      try{ new MutationObserver(schedule).observe(root, {childList:true}); }catch(e){}
+      window.addEventListener('resize', schedule);
+      try{ if(document.fonts && document.fonts.ready) document.fonts.ready.then(schedule); }catch(e){}
+      setInterval(schedule, 1500); // Nachzügler (nachgeladene Bilder, hochzählende Zahlen)
+      window.__bmFit = fitNow;
+    })();
+
     // ---------- Ambient: sanft aufsteigende Gold-Funken (liegt außerhalb von #beamerRoot, wird nie neu gerendert) ----------
     if(!document.getElementById('bmAmbient')){
       const amb = document.createElement('div');
@@ -14597,7 +14629,7 @@ function waldfestSceneMarkup(){
 (function(){
   'use strict';
   if(!document.getElementById('app')) return; // Beamer-Modus ersetzt den Body – dann nichts tun
-  var VERSION = 'rbparty-v2.3.149'; // gleich halten mit sw.js
+  var VERSION = 'rbparty-v2.3.150'; // gleich halten mit sw.js
   var QKEY='rbparty_feedback_queue', FKEY='rbparty_fb_fab', TKEY='rbparty_fb_times', NKEY='rbparty_fb_name';
   var KATS=[['fehler','🐞','Fehler'],['unklar','😕','Unklar'],['idee','💡','Idee'],['inhalt','⚖️','Inhalt / Balance'],['lob','👍','Lob']];
   var PRIOS=[['blockiert','⛔','Blockiert'],['nervt','😤','Nervt'],['klein','🤏','Kleinigkeit']];
