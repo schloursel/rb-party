@@ -1358,6 +1358,15 @@ window.addEventListener('unhandledrejection', function(e){
     try{
       const cr = {}; (state.players||[]).forEach(p=>{ if(p && p.char && p.char.id) cr[p.name] = [p.char.id, p.char.variantId||'']; });
       if(Object.keys(cr).length) msg.cr = cr;
+      // Charaktere, die es nur auf diesem Gerät gibt (Editor-Entwurf, nicht in charaktere.js): vollständig mitschicken
+      const cx = {}, lib = Array.isArray(window.RB_CHARAKTERE) ? window.RB_CHARAKTERE : [];
+      (state.players||[]).forEach(p=>{
+        const c = p && p.char; if(!c || !c.id || !c.cfg) return;
+        const base = lib.find(x=>x && x.id===c.id);
+        const known = base && (!c.variantId || (base.variants||[]).some(v=>v && v.id===c.variantId));
+        if(!known) cx[p.name] = {id:c.id, variantId:c.variantId||null, bg:c.bg||'#C9D6DC', cfg:c.cfg, name:c.name};
+      });
+      if(Object.keys(cx).length) msg.cx = cx;
     }catch(e){}
     if(beamerChannel){ try{ beamerChannel.postMessage(msg); }catch(e){} }
     try{ localStorage.setItem('rbparty_beamer_event', JSON.stringify(msg)); }catch(e){}
@@ -9886,7 +9895,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       });
     }
     // Charakter einer Person finden: direkt am Objekt oder über den Namen im gespeicherten Spielstand
-    let bmCharSrc = null, bmCharMap = {}, bmAvCache = {}, bmCrefs = {};
+    let bmCharSrc = null, bmCharMap = {}, bmAvCache = {}, bmCrefs = {}, bmCx = {};
     // Fallback: Charakter über [ID, Variante] aus der eigenen Charakterliste (charaktere.js / Editor-Entwürfe auf diesem Gerät)
     function bmCharFromRef(ref){
       try{
@@ -9906,6 +9915,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
         if(st !== bmCharSrc){ bmCharSrc = st; bmCharMap = {}; st.players.forEach(q=>{ if(q && q.char && q.char.cfg) bmCharMap[q.name] = q.char; }); }
         if(p && bmCharMap[p.name]) return bmCharMap[p.name];
       }
+      if(p && p.name && bmCx[p.name] && bmCx[p.name].cfg){ try{ return Object.assign({}, bmCx[p.name], {cfg:RBChar.normalize(bmCx[p.name].cfg)}); }catch(e){} }
       return (p && p.name && bmCrefs[p.name]) ? bmCharFromRef(bmCrefs[p.name]) : null;
     }
     // Rundes Charakterbild (Büste) mit Teamfarbe als Rand
@@ -13860,6 +13870,7 @@ function waldfestSceneMarkup(){
     let currentScreenType = 'base';
     function applyScreen(msg){
       if(msg && msg.cr && typeof msg.cr === 'object') bmCrefs = msg.cr;
+      if(msg && msg.cx && typeof msg.cx === 'object'){ bmCx = Object.assign({}, bmCx, msg.cx); bmAvCache = {}; }
       const prevScreenType = currentScreenType;
       bmNoBells = (msg.screen==='game_end');
       // Kauf im Shop: Animation im Shop-Screen statt Wechsel zum Ergebnis-Screen
@@ -14586,7 +14597,7 @@ function waldfestSceneMarkup(){
 (function(){
   'use strict';
   if(!document.getElementById('app')) return; // Beamer-Modus ersetzt den Body – dann nichts tun
-  var VERSION = 'rbparty-v2.3.146'; // gleich halten mit sw.js
+  var VERSION = 'rbparty-v2.3.147'; // gleich halten mit sw.js
   var QKEY='rbparty_feedback_queue', FKEY='rbparty_fb_fab', TKEY='rbparty_fb_times', NKEY='rbparty_fb_name';
   var KATS=[['fehler','🐞','Fehler'],['unklar','😕','Unklar'],['idee','💡','Idee'],['inhalt','⚖️','Inhalt / Balance'],['lob','👍','Lob']];
   var PRIOS=[['blockiert','⛔','Blockiert'],['nervt','😤','Nervt'],['klein','🤏','Kleinigkeit']];
