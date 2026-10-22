@@ -9917,6 +9917,13 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       const px = Math.round((size||28)*2.2);
       return `<span class="bm-dot bm-av" style="width:${px}px; height:${px}px; background:${escapeAttr(ch.bg||'#C9D6DC')}; border:3px solid ${escapeAttr(color||'#9CFF9C')};">${svg}</span>`;
     }
+    // Charakterbild (oder Teamfarben-Punkt) einer Person – überall im Beamer, wo ein Name mit Marker steht
+    function bmDot(p, s){
+      if(!p) return '';
+      const ch = bmCharOf(p);
+      if(ch) return bmAvatarHTML(ch, p.color, (s||28)/1.6);
+      return p.color ? `<span class="bm-dot" style="width:${s||28}px; height:${s||28}px; background:${p.color};"></span>` : '';
+    }
     function nameTag(p, size){
       if(!p) return '';
       const ch = bmCharOf(p);
@@ -12895,7 +12902,7 @@ return { RB_ICONS2, RB_ICON_RULE2, RB_ICON_SCALE, RB_ORT_STYLE };
       root.className = hasScene ? 'bm-root bm-scene bm-scene-dorf bm-scene-duel' : 'bm-root bm-scene-duel bm-duel-plain';
       const bg = hasScene ? sceneBgMarkup(data.scene==='sportplatz' ? 'sportplatz' : 'dorfplatz') : '';
       const nm = p=>escapeHtml((p && p.name) || '?');
-      const dot = (p,s)=> (p && p.color) ? `<span class="bm-dot" style="width:${s}px; height:${s}px; background:${p.color};"></span>` : '';
+      const dot = (p,s)=> bmDot(p,s);
       const alive = ()=>!!document.getElementById('ddRoot');
       if(phase==='challenge_setup'){
         const A = data.challenger || {}, B = data.target || {};
@@ -13517,7 +13524,7 @@ function waldfestSceneMarkup(){
       }catch(e){}
     }
     function pgBmScores(d){
-      return `<div class="pg-scores">${(d.scores||[]).map(s=>`<div class="pg-sc"><span class="bm-dot" style="width:22px; height:22px; background:${s.color||'#888'};"></span>${escapeHtml(s.name)} <b>${s.score}</b></div>`).join('')}</div>`;
+      return `<div class="pg-scores">${(d.scores||[]).map(s=>`<div class="pg-sc">${bmDot({name:s.name,color:s.color||'#888'},22)}${escapeHtml(s.name)} <b>${s.score}</b></div>`).join('')}</div>`;
     }
     function pgBmLabel(d, extra){
       return `<div class="bm-label">${escapeHtml(d.ico||'')} ${escapeHtml(d.label||'')} · ${extra||('Runde '+d.round+' von '+d.rounds)}</div>`;
@@ -13577,8 +13584,8 @@ function waldfestSceneMarkup(){
         root.innerHTML = `<div class="bm-center">${pgBmLabel(d)}${mid}${pgBmScores(d)}</div>`;
       } else if(d.game==='geo'){
         const rev = d.sub==='reveal', t = d.target||{};
-        const side = rev ? `<div class="pg-list">${(d.pins||[]).map((p,i)=>`<div class="pg-row ${p.win?'win':''}"><span class="bm-dot" style="width:24px; height:24px; background:${p.color};"></span><span style="flex:1;">${escapeHtml(p.name)}</span><b>${escapeHtml(new Intl.NumberFormat('de-DE',{maximumFractionDigits:p.km<10?1:0}).format(p.km))} km</b></div>`).join('')}</div>`
-          : `<div class="pg-list">${d.current?`<div class="pg-row"><span class="bm-dot" style="width:24px; height:24px; background:${d.current.color};"></span><span style="flex:1;">${escapeHtml(d.current.name)} tippt …</span></div>`:''}${(d.guessed||[]).map(n=>`<div class="pg-row"><span style="color:var(--good);">✓</span><span style="flex:1;">${escapeHtml(n)}</span></div>`).join('')}</div>`;
+        const side = rev ? `<div class="pg-list">${(d.pins||[]).map((p,i)=>`<div class="pg-row ${p.win?'win':''}">${bmDot(p,24)}<span style="flex:1;">${escapeHtml(p.name)}</span><b>${escapeHtml(new Intl.NumberFormat('de-DE',{maximumFractionDigits:p.km<10?1:0}).format(p.km))} km</b></div>`).join('')}</div>`
+          : `<div class="pg-list">${d.current?`<div class="pg-row">${bmDot(d.current,24)}<span style="flex:1;">${escapeHtml(d.current.name)} tippt …</span></div>`:''}${(d.guessed||[]).map(n=>`<div class="pg-row"><span style="color:var(--good);">✓</span><span style="flex:1;">${escapeHtml(n)}</span></div>`).join('')}</div>`;
         root.innerHTML = `<div class="bm-center">${pgBmLabel(d)}
           <div class="pg-big" style="font-size:min(76px,8.5vh);">${rev?'':'Wo liegt '}${escapeHtml(t.name||'')}${rev?'':'?'}</div>
           ${t.zusatz?`<div class="bm-sub" style="margin:0;">${escapeHtml(t.zusatz)}</div>`:''}
@@ -14579,7 +14586,7 @@ function waldfestSceneMarkup(){
 (function(){
   'use strict';
   if(!document.getElementById('app')) return; // Beamer-Modus ersetzt den Body – dann nichts tun
-  var VERSION = 'rbparty-v2.3.145'; // gleich halten mit sw.js
+  var VERSION = 'rbparty-v2.3.146'; // gleich halten mit sw.js
   var QKEY='rbparty_feedback_queue', FKEY='rbparty_fb_fab', TKEY='rbparty_fb_times', NKEY='rbparty_fb_name';
   var KATS=[['fehler','🐞','Fehler'],['unklar','😕','Unklar'],['idee','💡','Idee'],['inhalt','⚖️','Inhalt / Balance'],['lob','👍','Lob']];
   var PRIOS=[['blockiert','⛔','Blockiert'],['nervt','😤','Nervt'],['klein','🤏','Kleinigkeit']];
