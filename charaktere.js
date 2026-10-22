@@ -6650,7 +6650,7 @@ window.RB_CHARAKTERE = [
         "variants": [
             {
                 "id": "feuerwehr",
-                "name": "Feuerwehr-Benni",
+                "name": "Feuerwehr-Benny",
                 "bg": "#E8A598",
                 "unlock": {
                     "games": 1
@@ -6766,7 +6766,7 @@ window.RB_CHARAKTERE = [
             },
             {
                 "id": "pirat",
-                "name": "Piraten-Benni",
+                "name": "Piraten-Benny",
                 "bg": "#B7D3E8",
                 "unlock": {
                     "wins": 1
@@ -6882,7 +6882,7 @@ window.RB_CHARAKTERE = [
             },
             {
                 "id": "cowboy",
-                "name": "Cowboy-Benni",
+                "name": "Cowboy-Benny",
                 "bg": "#F2D98D",
                 "unlock": {
                     "wins": 2
@@ -6998,7 +6998,7 @@ window.RB_CHARAKTERE = [
             },
             {
                 "id": "koenig",
-                "name": "König-Benni",
+                "name": "König-Benny",
                 "bg": "#E8D5F2",
                 "unlock": {
                     "wins": 3
