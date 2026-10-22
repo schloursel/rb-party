@@ -27,6 +27,11 @@
   pre{ margin:8px 0 0; padding:10px; border-radius:10px; background:rgba(0,0,0,.35); font-size:12px; overflow:auto; max-height:260px; color:var(--soft); }
   .msg{ padding:14px; border-radius:14px; background:var(--surface2); margin:14px 0; }
   .msg.err{ border:1px solid var(--bad); }
+  .login{ background:var(--surface2); border:1px solid var(--line); border-radius:16px; padding:14px; margin:14px 0; }
+  .login h2{ margin:0 0 6px; font-size:18px; color:var(--gold); }
+  .login input{ width:100%; min-height:44px; margin:6px 0; padding:8px 12px; border-radius:12px; border:1px solid var(--line); background:var(--bg); color:var(--text); font:inherit; font-size:16px; }
+  .login ol{ margin:8px 0 0; padding-left:20px; color:var(--soft); font-size:14px; }
+  .login .err{ color:#ff8a75; min-height:1.2em; font-size:14px; }
   .toast{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:#000c; color:#fff; padding:10px 16px; border-radius:12px; z-index:9; }
 </style>
 </head>
@@ -38,6 +43,7 @@
     <button class="pri" id="copyBtn" type="button">📋 Alles als Text kopieren</button>
     <button id="fileBtn" type="button">💾 Als Datei speichern</button>
     <button id="reloadBtn" type="button">↻ Neu laden</button>
+    <button id="outBtn" type="button" hidden>🔓 Abmelden</button>
   </div>
   <div class="bar" id="filters"></div>
   <div id="list"></div>
@@ -46,9 +52,15 @@
 (function(){
   'use strict';
   var DB = 'https://rb-party-default-rtdb.europe-west1.firebasedatabase.app';
+  // Entwicklerzugang: Firebase-Anmeldung (E-Mail + Passwort). Beides wird in der Firebase-Konsole festgelegt, das Passwort steht nirgends in der App.
+  var API_KEY = '';      // Firebase „Web-API-Schlüssel“ (Projekteinstellungen → Allgemein). Ist öffentlich gedacht und kein Geheimnis.
+  var DEV_EMAIL = '';    // E-Mail des Entwickler-Benutzers (Authentication → Benutzer)
   var KAT = {fehler:'🐞 Fehler', unklar:'😕 Unklar', idee:'💡 Idee', inhalt:'⚖️ Inhalt', lob:'👍 Lob', karte:'⚑ Karte'};
   var PRIO = {blockiert:'⛔ Blockiert', nervt:'😤 Nervt', klein:'🤏 Kleinigkeit'};
   var items = [], filt = {kat:'', screen:''};
+  var SK = 'rbparty_fb_auth';
+  function tok(){ try{ return JSON.parse(sessionStorage.getItem(SK)||'null'); }catch(e){ return null; } }
+  function tokSet(t){ try{ if(t) sessionStorage.setItem(SK, JSON.stringify(t)); else sessionStorage.removeItem(SK); }catch(e){} }
   var $ = function(id){ return document.getElementById(id); };
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function toast(t){ var e=document.createElement('div'); e.className='toast'; e.textContent=t; document.body.appendChild(e); setTimeout(function(){ e.remove(); }, 2600); }
@@ -93,17 +105,60 @@
     }).join('') : '<div class="msg">Keine Einträge für diese Auswahl.</div>';
   }
 
+  function signIn(email, pw){
+    return fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+encodeURIComponent(API_KEY), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:email, password:pw, returnSecureToken:true})})
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error((j.error&&j.error.message)||'login'); return j; }); })
+      .then(function(j){ var t = {id:j.idToken, refresh:j.refreshToken, exp:Date.now()+(parseInt(j.expiresIn,10)||3600)*1000-60000}; tokSet(t); return t; });
+  }
+  function refresh(){
+    var t = tok(); if(!t || !t.refresh) return Promise.reject(new Error('norefresh'));
+    return fetch('https://securetoken.googleapis.com/v1/token?key='+encodeURIComponent(API_KEY), {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'grant_type=refresh_token&refresh_token='+encodeURIComponent(t.refresh)})
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error('refresh'); return j; }); })
+      .then(function(j){ var n = {id:j.id_token, refresh:j.refresh_token||t.refresh, exp:Date.now()+(parseInt(j.expires_in,10)||3600)*1000-60000}; tokSet(n); return n; });
+  }
+  function token(){ var t = tok(); if(!t) return Promise.resolve(null); if(Date.now() < t.exp) return Promise.resolve(t); return refresh().catch(function(){ tokSet(null); return null; }); }
+
+  function showLogin(msg){
+    $('sub').textContent = 'Anmeldung nötig';
+    $('filters').innerHTML = '';
+    if(!API_KEY){
+      $('list').innerHTML = '<div class="login"><h2>🔒 Zugang einrichten</h2><div>Das Feedback ist geschützt. Einmalig einrichten:</div><ol>'+
+        '<li>Firebase-Konsole → <b>Authentication</b> → Anmeldemethode „E-Mail/Passwort“ aktivieren.</li>'+
+        '<li>Unter <b>Benutzer</b> einen Benutzer anlegen (deine E-Mail + dein Entwicklerpasswort).</li>'+
+        '<li><b>Projekteinstellungen → Allgemein → Web-API-Schlüssel</b> kopieren und zusammen mit der E-Mail an Claude geben (kommt oben in <code>feedback.html</code>).</li>'+
+        '<li><b>Realtime Database → Regeln</b>: Lesen von <code>rb/feedback</code> nur für diese E-Mail erlauben (Regeln stehen im Chat).</li></ol></div>';
+      return;
+    }
+    $('list').innerHTML = '<form class="login" id="loginForm"><h2>🔒 Entwicklerzugang</h2>'+
+      '<input type="email" id="lgMail" placeholder="E-Mail" autocomplete="username" value="'+esc(DEV_EMAIL||localStorage.getItem('rbparty_fb_mail')||'')+'"'+(DEV_EMAIL?' readonly':'')+'>'+
+      '<input type="password" id="lgPw" placeholder="Entwicklerpasswort" autocomplete="current-password">'+
+      '<div class="err" id="lgErr">'+esc(msg||'')+'</div><button class="pri" type="submit">Anmelden</button></form>';
+    $('loginForm').addEventListener('submit', function(e){
+      e.preventDefault(); var mail = $('lgMail').value.trim(), pw = $('lgPw').value; if(!mail || !pw){ $('lgErr').textContent = 'Bitte E-Mail und Passwort eingeben.'; return; }
+      $('lgErr').textContent = 'Melde an …';
+      signIn(mail, pw).then(function(){ try{ localStorage.setItem('rbparty_fb_mail', mail); }catch(x){} load(); }).catch(function(err){
+        var m = String(err.message||err);
+        $('lgErr').textContent = /INVALID_LOGIN|INVALID_PASSWORD|EMAIL_NOT_FOUND|INVALID_EMAIL/.test(m) ? 'E-Mail oder Passwort stimmt nicht.' : /TOO_MANY/.test(m) ? 'Zu viele Versuche – bitte kurz warten.' : 'Anmeldung nicht möglich ('+m+').';
+      });
+    });
+  }
+
   function load(){
     $('sub').textContent = 'Lade …';
-    fetch(DB+'/rb/feedback.json', {cache:'no-store'}).then(function(r){
+    token().then(function(t){
+      return fetch(DB+'/rb/feedback.json'+(t?'?auth='+encodeURIComponent(t.id):''), {cache:'no-store'});
+    }).then(function(r){
+      if(r.status===401 || r.status===403){ tokSet(null); var e = new Error('login'); e.login = true; throw e; }
       if(!r.ok) throw new Error('http'+r.status);
       return r.json();
     }).then(function(d){
       items = d ? Object.keys(d).map(function(k){ var e = d[k]||{}; e._id = k; return e; }) : [];
       items.sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+      $('outBtn').hidden = !tok();
       render();
       if(!items.length) $('list').innerHTML = '<div class="msg">Noch kein Feedback eingegangen.</div>';
     }).catch(function(err){
+      if(err && err.login){ showLogin(tok() ? '' : ''); return; }
       $('sub').textContent = 'Konnte nicht geladen werden';
       var m = String(err.message||err), hint = /http40[13]/.test(m)
         ? 'Firebase verweigert das Lesen (Fehler '+esc(m.slice(4))+'). In der Firebase-Konsole unter Realtime Database → Regeln muss für „rb/feedback“ das Lesen erlaubt sein, oder du exportierst die Daten dort (⋮ → JSON exportieren).'
@@ -114,6 +169,7 @@
 
   $('filters').addEventListener('click', function(e){ var b=e.target.closest('[data-k]'); if(!b) return; filt[b.dataset.k]=b.dataset.v; render(); });
   $('reloadBtn').addEventListener('click', load);
+  $('outBtn').addEventListener('click', function(){ tokSet(null); $('outBtn').hidden = true; load(); });
   $('copyBtn').addEventListener('click', function(){
     var t = toText(items); if(!t){ toast('Nichts zu kopieren'); return; }
     (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ toast('Kopiert – jetzt bei Claude einfügen'); }, function(){
