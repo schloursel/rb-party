@@ -1,6 +1,6 @@
 // RB-Party Service Worker â€“ macht die App offline startbar.
 // Bei jeder neuen Version der App VERSION erhÃ¶hen, damit alte Dateien ersetzt werden.
-const VERSION = 'rbparty-v2.3.151';
+const VERSION = 'rbparty-v2.3.152';
 const APP_FILES = [
   './',
   'index.html',
@@ -10,6 +10,7 @@ const APP_FILES = [
   'charaktere.json',
   'charaktere.js',
   'charakter-editor.html',
+  'feedback.html',
   'manifest.webmanifest',
   'icons/icon-180.png',
   'icons/icon-192.png',
@@ -53,7 +54,7 @@ self.addEventListener('fetch', event => {
   if (url.origin !== location.origin) return;
 
   // Seitenaufrufe (auch ?beamer=1): zuerst das Netz (max. 3 s, damit neue Versionen sofort erscheinen), sonst die gecachte index.html (offline)
-  if (req.mode === 'navigate' && !/charakter-(editor|test|prototypen)\.html$/.test(url.pathname)) {
+  if (req.mode === 'navigate' && !/(charakter-(editor|test|prototypen)|feedback)\.html$/.test(url.pathname)) {
     event.respondWith(
       Promise.race([
         fetch('index.html', { cache: 'no-cache' }).then(res => {

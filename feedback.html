@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>RB-Party Feedback</title>
+<style>
+  :root{ --bg:#0E1C11; --surface:#1D3322; --surface2:#28452E; --text:#F3E8C8; --soft:#C9B983; --faint:#8FA27E; --gold:#E8CE6B; --line:rgba(212,175,55,.35); --bad:#D1543A; --good:#5FBF62; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--text); font:16px/1.4 system-ui,-apple-system,sans-serif; padding:max(14px,env(safe-area-inset-top)) 16px 40px; }
+  main{ max-width:860px; margin:0 auto; }
+  h1{ margin:6px 0 2px; font-size:26px; color:var(--gold); letter-spacing:.03em; }
+  .sub{ color:var(--faint); font-size:14px; margin:0 0 14px; }
+  .bar{ display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+  button,.chip{ min-height:42px; padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--text); font:inherit; font-size:15px; cursor:pointer; }
+  button.pri{ background:var(--gold); color:#1a1a10; border-color:transparent; font-weight:700; }
+  .chip.on{ background:var(--gold); color:#1a1a10; font-weight:700; border-color:transparent; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:12px 14px; margin:10px 0; }
+  .head{ display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; font-size:14px; color:var(--soft); }
+  .tag{ padding:2px 10px; border-radius:999px; background:var(--surface2); color:var(--text); font-size:13px; }
+  .tag.blockiert{ background:var(--bad); } .tag.nervt{ background:#a06a1a; }
+  .text{ margin:8px 0 4px; white-space:pre-wrap; word-break:break-word; font-size:17px; }
+  .row{ color:var(--soft); font-size:14px; margin:3px 0; word-break:break-word; }
+  .row b{ color:var(--text); }
+  details{ margin-top:8px; } summary{ cursor:pointer; color:var(--faint); font-size:14px; }
+  pre{ margin:8px 0 0; padding:10px; border-radius:10px; background:rgba(0,0,0,.35); font-size:12px; overflow:auto; max-height:260px; color:var(--soft); }
+  .msg{ padding:14px; border-radius:14px; background:var(--surface2); margin:14px 0; }
+  .msg.err{ border:1px solid var(--bad); }
+  .toast{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:#000c; color:#fff; padding:10px 16px; border-radius:12px; z-index:9; }
+</style>
+</head>
+<body>
+<main>
+  <h1>💬 Feedback-Eingang</h1>
+  <p class="sub" id="sub">Lade …</p>
+  <div class="bar">
+    <button class="pri" id="copyBtn" type="button">📋 Alles als Text kopieren</button>
+    <button id="fileBtn" type="button">💾 Als Datei speichern</button>
+    <button id="reloadBtn" type="button">↻ Neu laden</button>
+  </div>
+  <div class="bar" id="filters"></div>
+  <div id="list"></div>
+</main>
+<script>
+(function(){
+  'use strict';
+  var DB = 'https://rb-party-default-rtdb.europe-west1.firebasedatabase.app';
+  var KAT = {fehler:'🐞 Fehler', unklar:'😕 Unklar', idee:'💡 Idee', inhalt:'⚖️ Inhalt', lob:'👍 Lob', karte:'⚑ Karte'};
+  var PRIO = {blockiert:'⛔ Blockiert', nervt:'😤 Nervt', klein:'🤏 Kleinigkeit'};
+  var items = [], filt = {kat:'', screen:''};
+  var $ = function(id){ return document.getElementById(id); };
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function toast(t){ var e=document.createElement('div'); e.className='toast'; e.textContent=t; document.body.appendChild(e); setTimeout(function(){ e.remove(); }, 2600); }
+  function when(e){ try{ return new Date(e.ts||e.zeit).toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'}); }catch(x){ return ''; } }
+  function screenOf(e){ return (e.bildschirm || (e.ctx && e.ctx.bildschirm) || 'pad'); }
+  function elOf(e){ var el = e.ctx && e.ctx.element; return el ? (el.text || el.aria || el.title || el.selector || '') : ''; }
+  function spielOf(e){ var s = (e.ctx && e.ctx.spiel) || {}; var mg = s.minispiel; var p=[]; if(s.runde!=null) p.push('Runde '+s.runde); if(mg && mg.key) p.push('Minispiel '+mg.key+(mg.phase?' ('+mg.phase+')':'')); if(s.spielerAnzahl) p.push(s.spielerAnzahl+' Spieler'); return p.join(' · '); }
+
+  function toText(list){
+    return list.map(function(e,i){
+      var l = [];
+      l.push('#'+(i+1)+' · '+when(e)+' · '+(KAT[e.kat]||e.kat||'—')+(e.prio?' · '+(PRIO[e.prio]||e.prio):'')+' · '+(screenOf(e)==='beamer'?'Beamer':'Pad')+(e.name?' · von '+e.name:''));
+      if(e.text) l.push(e.text);
+      if(e.grund) l.push('Grund: '+e.grund);
+      if(e.erwartet) l.push('Erwartet: '+e.erwartet);
+      if(e.passiert) l.push('Passiert: '+e.passiert);
+      var el = elOf(e); if(el) l.push('Markiert: '+el+(e.ctx&&e.ctx.element&&e.ctx.element.selector?'  ['+e.ctx.element.selector+']':''));
+      var sp = spielOf(e); if(e.ctx) l.push('Ansicht: '+(e.ctx.ansicht||'—')+(sp?' · '+sp:'')+' · '+(e.ctx.version||'')+(e.ctx.geraet?' · '+e.ctx.geraet.viewport.join('×'):''));
+      if(e.ctx && e.ctx.fehler && e.ctx.fehler.length) l.push('Fehlerprotokoll: '+e.ctx.fehler.slice(-3).join(' | '));
+      return l.join('\n');
+    }).join('\n\n---\n\n');
+  }
+
+  function render(){
+    var list = items.filter(function(e){ return (!filt.kat || e.kat===filt.kat || (filt.kat==='karte' && e.typ==='karte')) && (!filt.screen || screenOf(e)===filt.screen); });
+    $('sub').textContent = items.length+' Einträge'+(list.length!==items.length?' · '+list.length+' angezeigt':'')+' · neueste zuerst';
+    var f = '';
+    function chip(k,v,label){ return '<button type="button" class="chip'+(filt[k]===v?' on':'')+'" data-k="'+k+'" data-v="'+v+'">'+label+'</button>'; }
+    f += chip('kat','','Alle') + Object.keys(KAT).map(function(k){ return chip('kat',k,KAT[k]); }).join('');
+    f += chip('screen','','Pad + Beamer') + chip('screen','pad','📱 Pad') + chip('screen','beamer','📺 Beamer');
+    $('filters').innerHTML = f;
+    $('list').innerHTML = list.length ? list.map(function(e){
+      var el = elOf(e), sp = spielOf(e);
+      return '<div class="card"><div class="head"><span>'+esc(when(e))+'</span><span class="tag">'+esc(KAT[e.kat]||e.kat||'—')+'</span>'+(e.prio?'<span class="tag '+esc(e.prio)+'">'+esc(PRIO[e.prio]||e.prio)+'</span>':'')+'<span class="tag">'+(screenOf(e)==='beamer'?'📺 Beamer':'📱 Pad')+'</span>'+(e.name?'<span>von <b>'+esc(e.name)+'</b></span>':'')+'</div>'+
+        (e.text?'<div class="text">'+esc(e.text)+'</div>':'')+
+        (e.grund?'<div class="row"><b>Grund:</b> '+esc(e.grund)+'</div>':'')+
+        (e.erwartet?'<div class="row"><b>Erwartet:</b> '+esc(e.erwartet)+'</div>':'')+
+        (e.passiert?'<div class="row"><b>Passiert:</b> '+esc(e.passiert)+'</div>':'')+
+        (el?'<div class="row"><b>Markiert:</b> '+esc(el)+'</div>':'')+
+        '<div class="row"><b>Ansicht:</b> '+esc((e.ctx&&e.ctx.ansicht)||'—')+(sp?' · '+esc(sp):'')+' · '+esc((e.ctx&&e.ctx.version)||'')+'</div>'+
+        '<details><summary>Technik</summary><pre>'+esc(JSON.stringify(e,null,2))+'</pre></details></div>';
+    }).join('') : '<div class="msg">Keine Einträge für diese Auswahl.</div>';
+  }
+
+  function load(){
+    $('sub').textContent = 'Lade …';
+    fetch(DB+'/rb/feedback.json', {cache:'no-store'}).then(function(r){
+      if(!r.ok) throw new Error('http'+r.status);
+      return r.json();
+    }).then(function(d){
+      items = d ? Object.keys(d).map(function(k){ var e = d[k]||{}; e._id = k; return e; }) : [];
+      items.sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+      render();
+      if(!items.length) $('list').innerHTML = '<div class="msg">Noch kein Feedback eingegangen.</div>';
+    }).catch(function(err){
+      $('sub').textContent = 'Konnte nicht geladen werden';
+      var m = String(err.message||err), hint = /http40[13]/.test(m)
+        ? 'Firebase verweigert das Lesen (Fehler '+esc(m.slice(4))+'). In der Firebase-Konsole unter Realtime Database → Regeln muss für „rb/feedback“ das Lesen erlaubt sein, oder du exportierst die Daten dort (⋮ → JSON exportieren).'
+        : 'Keine Verbindung zum Server. Internet prüfen und neu laden.';
+      $('list').innerHTML = '<div class="msg err">'+hint+'</div>';
+    });
+  }
+
+  $('filters').addEventListener('click', function(e){ var b=e.target.closest('[data-k]'); if(!b) return; filt[b.dataset.k]=b.dataset.v; render(); });
+  $('reloadBtn').addEventListener('click', load);
+  $('copyBtn').addEventListener('click', function(){
+    var t = toText(items); if(!t){ toast('Nichts zu kopieren'); return; }
+    (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ toast('Kopiert – jetzt bei Claude einfügen'); }, function(){
+      var ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); toast('Kopiert – jetzt bei Claude einfügen'); }catch(x){ toast('Kopieren hat nicht geklappt'); } ta.remove();
+    });
+  });
+  $('fileBtn').addEventListener('click', function(){
+    var blob=new Blob([JSON.stringify(items,null,2)],{type:'application/json'}), a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='rbparty-feedback-'+new Date().toISOString().slice(0,10)+'.json'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+  });
+  load();
+})();
+</script>
+</body>
+</html>

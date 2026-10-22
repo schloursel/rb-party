@@ -1036,6 +1036,7 @@
           <button type="button" class="menu-item install-hint" id="installBtn" title="Als App installieren"><span class="mi-ico">⤓</span><span class="mi-txt"><b>Als App installieren</b><small>Auf den Startbildschirm legen</small></span></button>
           <button type="button" class="menu-item" id="helpOpenBtn"><span class="mi-ico">❔</span><span class="mi-txt"><b>Hilfe</b><small>Begriffe und Ablauf erklärt</small></span></button>
           <button type="button" class="menu-item" id="fbOpenBtn"><span class="mi-ico">💬</span><span class="mi-txt"><b>Feedback geben</b><small>Fehler, Ideen oder Unklarheiten direkt melden</small></span></button>
+          <button type="button" class="menu-item" id="fbInboxBtn"><span class="mi-ico">📥</span><span class="mi-txt"><b>Feedback ansehen</b><small>Eingegangenes Feedback lesen und kopieren</small></span></button>
           <button type="button" class="menu-item" id="fbFabBtn"><span class="mi-ico">💭</span><span class="mi-txt"><b>Feedback-Knopf</b><small>Schwebenden Knopf ein- oder ausblenden</small></span></button>
         </div>
       </div>
@@ -14629,7 +14630,7 @@ function waldfestSceneMarkup(){
 (function(){
   'use strict';
   if(!document.getElementById('app')) return; // Beamer-Modus ersetzt den Body – dann nichts tun
-  var VERSION = 'rbparty-v2.3.151'; // gleich halten mit sw.js
+  var VERSION = 'rbparty-v2.3.152'; // gleich halten mit sw.js
   var QKEY='rbparty_feedback_queue', FKEY='rbparty_fb_fab', TKEY='rbparty_fb_times', NKEY='rbparty_fb_name';
   var KATS=[['fehler','🐞','Fehler'],['unklar','😕','Unklar'],['idee','💡','Idee'],['inhalt','⚖️','Inhalt / Balance'],['lob','👍','Lob']];
   var PRIOS=[['blockiert','⛔','Blockiert'],['nervt','😤','Nervt'],['klein','🤏','Kleinigkeit']];
@@ -14690,6 +14691,7 @@ function waldfestSceneMarkup(){
     var b=document.getElementById('fbFabBtn'); if(b){ var s=b.querySelector('small'); if(s) s.textContent = fabHidden() ? 'Ist ausgeblendet – tippen zum Einblenden' : 'Ist sichtbar – tippen zum Ausblenden'; }
   }
   fab.addEventListener('click', function(){ start({}); });
+  var ib=document.getElementById('fbInboxBtn'); if(ib) ib.addEventListener('click', function(){ window.open('feedback.html','_blank'); });
   var ob=document.getElementById('fbOpenBtn'); if(ob) ob.addEventListener('click', function(){ start({}); });
   var fb=document.getElementById('fbFabBtn'); if(fb) fb.addEventListener('click', function(){ lsSet(FKEY, fabHidden() ? 'on' : 'off'); applyFab(); });
   applyFab();
