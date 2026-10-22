@@ -14629,7 +14629,7 @@ function waldfestSceneMarkup(){
 (function(){
   'use strict';
   if(!document.getElementById('app')) return; // Beamer-Modus ersetzt den Body – dann nichts tun
-  var VERSION = 'rbparty-v2.3.150'; // gleich halten mit sw.js
+  var VERSION = 'rbparty-v2.3.151'; // gleich halten mit sw.js
   var QKEY='rbparty_feedback_queue', FKEY='rbparty_fb_fab', TKEY='rbparty_fb_times', NKEY='rbparty_fb_name';
   var KATS=[['fehler','🐞','Fehler'],['unklar','😕','Unklar'],['idee','💡','Idee'],['inhalt','⚖️','Inhalt / Balance'],['lob','👍','Lob']];
   var PRIOS=[['blockiert','⛔','Blockiert'],['nervt','😤','Nervt'],['klein','🤏','Kleinigkeit']];
@@ -14772,6 +14772,16 @@ function waldfestSceneMarkup(){
       view=mk('div','rbfb-bmview'); view.style.cssText='position:fixed;z-index:99105;pointer-events:none;left:50%;top:14px;transform:translateX(-50%);aspect-ratio:16/9;width:min(96vw,calc((100vh - 150px)*16/9));background:#000;overflow:hidden;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.55)';
       vfr=document.createElement('iframe'); vfr.title='Beamer-Ansicht'; vfr.src=location.pathname+'?beamer=1&fb=1';
       vfr.style.cssText='position:absolute;left:0;top:0;width:1920px;height:1080px;border:0;transform-origin:0 0;pointer-events:none';
+      // Der frisch geladene Beamer zeigt zuerst den Grundbildschirm. Damit er denselben Bildschirm zeigt wie der echte Beamer
+      // (z. B. ein Minispiel), wird das zuletzt gesendete Signal des Pads einmal nachgespielt.
+      vfr.addEventListener('load', function(){
+        setTimeout(function(){
+          try{
+            var m = localStorage.getItem('rbparty_beamer_event'); if(!m || !vfr || !vfr.contentWindow) return;
+            vfr.contentWindow.dispatchEvent(new StorageEvent('storage', {key:'rbparty_beamer_event', newValue:m}));
+          }catch(e){}
+        }, 500);
+      });
       view.appendChild(vfr); document.body.insertBefore(view, ov); scaleView(); ov.style.background='rgba(0,0,0,.72)';
     }
     function hideView(){ if(view){ view.remove(); view=null; vfr=null; } ov.style.background=''; }
