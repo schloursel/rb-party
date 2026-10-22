@@ -23,6 +23,9 @@
   .text{ margin:8px 0 4px; white-space:pre-wrap; word-break:break-word; font-size:17px; }
   .row{ color:var(--soft); font-size:14px; margin:3px 0; word-break:break-word; }
   .row b{ color:var(--text); }
+  .acts{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .acts button{ min-height:40px; font-size:14px; padding:6px 12px; }
+  .acts .del{ border-color:var(--bad); color:#ff9c88; }
   details{ margin-top:8px; } summary{ cursor:pointer; color:var(--faint); font-size:14px; }
   pre{ margin:8px 0 0; padding:10px; border-radius:10px; background:rgba(0,0,0,.35); font-size:12px; overflow:auto; max-height:260px; color:var(--soft); }
   .msg{ padding:14px; border-radius:14px; background:var(--surface2); margin:14px 0; }
@@ -58,7 +61,7 @@
   var items = [], filt = {kat:'', screen:''};
   var $ = function(id){ return document.getElementById(id); };
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-  function toast(t){ var e=document.createElement('div'); e.className='toast'; e.textContent=t; document.body.appendChild(e); setTimeout(function(){ e.remove(); }, 2600); }
+  function toast(t){ var o=document.querySelector('.toast'); if(o) o.remove(); var e=document.createElement('div'); e.className='toast'; e.textContent=t; document.body.appendChild(e); setTimeout(function(){ e.remove(); }, 2600); }
   function when(e){ try{ return new Date(e.ts||e.zeit).toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'}); }catch(x){ return ''; } }
   function screenOf(e){ return (e.bildschirm || (e.ctx && e.ctx.bildschirm) || 'pad'); }
   function elOf(e){ var el = e.ctx && e.ctx.element; return el ? (el.text || el.aria || el.title || el.selector || '') : ''; }
@@ -96,6 +99,7 @@
         (e.passiert?'<div class="row"><b>Passiert:</b> '+esc(e.passiert)+'</div>':'')+
         (el?'<div class="row"><b>Markiert:</b> '+esc(el)+'</div>':'')+
         '<div class="row"><b>Ansicht:</b> '+esc((e.ctx&&e.ctx.ansicht)||'—')+(sp?' · '+esc(sp):'')+' · '+esc((e.ctx&&e.ctx.version)||'')+'</div>'+
+        '<div class="acts"><button type="button" data-a="claude" data-id="'+esc(e._id)+'">🤖 An Claude leiten</button><button type="button" data-a="copy" data-id="'+esc(e._id)+'">📋 Kopieren</button><button type="button" class="del" data-a="del" data-id="'+esc(e._id)+'">🗑 Löschen</button></div>'+
         '<details><summary>Technik</summary><pre>'+esc(JSON.stringify(e,null,2))+'</pre></details></div>';
     }).join('') : '<div class="msg">Keine Einträge für diese Auswahl.</div>';
   }
@@ -119,6 +123,26 @@
     });
   }
 
+  function copyText(t, ok){
+    (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ toast(ok); }, function(){
+      var ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); toast(ok); }catch(x){ toast('Kopieren hat nicht geklappt'); } ta.remove();
+    });
+  }
+  $('list').addEventListener('click', function(ev){
+    var b = ev.target.closest('[data-a]'); if(!b) return;
+    var id = b.dataset.id, e = items.filter(function(x){ return x._id===id; })[0]; if(!e) return;
+    if(b.dataset.a==='copy') copyText(toText([e]), 'Kopiert – ab ins Dokument');
+    else if(b.dataset.a==='claude') copyText('Hier ist Feedback aus der RB-Party-App (Repo schloursel/rb-party). Bitte analysiere es, finde die Ursache im Code und setze die Verbesserung um:\n\n'+toText([e]), 'Für Claude kopiert – jetzt im Chat einfügen');
+    else if(b.dataset.a==='del'){
+      if(!confirm('Dieses Feedback endgültig löschen?')) return;
+      b.disabled = true;
+      fetch(DB+'/rb/feedback/'+encodeURIComponent(id)+'.json', {method:'DELETE'}).then(function(r){
+        if(r.status===401 || r.status===403){ b.disabled = false; alert('Firebase verweigert das Löschen. In den Regeln bei „$id“ muss stehen:\n".write": "!data.exists() || !newData.exists()"'); return; }
+        if(!r.ok) throw new Error('http'+r.status);
+        items = items.filter(function(x){ return x._id!==id; }); render(); toast('Gelöscht');
+      }).catch(function(){ b.disabled = false; toast('Löschen hat nicht geklappt – Internet prüfen'); });
+    }
+  });
   $('filters').addEventListener('click', function(e){ var b=e.target.closest('[data-k]'); if(!b) return; filt[b.dataset.k]=b.dataset.v; render(); });
   $('reloadBtn').addEventListener('click', load);
   $('copyBtn').addEventListener('click', function(){
